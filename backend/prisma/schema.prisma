@@ -1,0 +1,189 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  CASHIER
+}
+
+enum OrderStatus {
+  PENDING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PAID
+  ADVANCE
+  UNPAID
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  TRANSFER
+  OTHER
+}
+
+enum NotificationKind {
+  DAY_BEFORE
+  SAME_DAY
+  OVERDUE
+}
+
+enum NotificationStatus {
+  SCHEDULED
+  SENT
+  SKIPPED
+  FAILED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  phone         String?
+  role          UserRole
+  passwordHash  String    @map("password_hash")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  deviceTokens      DeviceToken[]
+  createdOrders     Order[]       @relation("OrderCreator")
+  statusChanges     OrderStatusHistory[]
+  notifications     Notification[]
+
+  @@map("users")
+}
+
+model DeviceToken {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  platform     String   // "ios" | "android"
+  token        String
+  lastSeenAt   DateTime @map("last_seen_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("device_tokens")
+}
+
+model Order {
+  id              String        @id @default(uuid())
+  orderNo         String        @unique @map("order_no")
+  customerName    String        @map("customer_name")
+  customerPhone   String        @map("customer_phone")
+  pickupAt        DateTime      @map("pickup_at")
+  status          OrderStatus   @default(PENDING)
+  paymentStatus   PaymentStatus @default(UNPAID) @map("payment_status")
+  advanceAmount   Decimal       @default(0) @map("advance_amount") @db.Decimal(10,2)
+  totalAmount     Decimal       @map("total_amount") @db.Decimal(10,2)
+  notes           String?
+  createdBy       String        @map("created_by")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  creator       User                 @relation("OrderCreator", fields: [createdBy], references: [id])
+  items         OrderItem[]
+  payments      Payment[]
+  statusHistory OrderStatusHistory[]
+  notifications Notification[]
+
+  @@index([pickupAt])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([pickupAt, status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String  @map("order_id")
+  itemName  String  @map("item_name")
+  qty       Int
+  unitPrice Decimal @map("unit_price") @db.Decimal(10,2)
+  subtotal  Decimal @db.Decimal(10,2)
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Payment {
+  id      String        @id @default(uuid())
+  orderId String        @map("order_id")
+  method  PaymentMethod
+  amount  Decimal       @db.Decimal(10,2)
+  paidAt  DateTime      @map("paid_at")
+  ref     String?
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model OrderStatusHistory {
+  id         String      @id @default(uuid())
+  orderId    String      @map("order_id")
+  fromStatus OrderStatus @map("from_status")
+  toStatus   OrderStatus @map("to_status")
+  changedBy  String      @map("changed_by")
+  changedAt  DateTime    @default(now()) @map("changed_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [changedBy], references: [id])
+
+  @@map("order_status_history")
+}
+
+model ReminderPolicy {
+  id                     String @id @default(uuid())
+  dayBeforeHours         Int[]  @map("day_before_hours")
+  sameDayOffsetsMinutes  Int[]  @map("same_day_offsets_minutes")
+  overdueRepeatMinutes   Int    @default(60) @map("overdue_repeat_minutes")
+  quietHoursStart        String @map("quiet_hours_start") // "22:00"
+  quietHoursEnd          String @map("quiet_hours_end")   // "08:00"
+
+  @@map("reminder_policies")
+}
+
+model Notification {
+  id           String             @id @default(uuid())
+  orderId      String             @map("order_id")
+  targetUserId String             @map("target_user_id")
+  kind         NotificationKind
+  scheduledFor DateTime           @map("scheduled_for")
+  sentAt       DateTime?          @map("sent_at")
+  status       NotificationStatus @default(SCHEDULED)
+  attemptCount Int                @default(0) @map("attempt_count")
+  error        String?
+
+  // Relations
+  order      Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  targetUser User  @relation(fields: [targetUserId], references: [id])
+
+  @@index([scheduledFor, status])
+  @@map("notifications")
+}
