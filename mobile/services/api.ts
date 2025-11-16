@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://localhost:5000/api'; // Change to your backend URL
+const API_URL = 'http://192.168.1.7:5000/api'; // Change to your backend URL
 
 export interface LoginRequest {
   email: string;
@@ -73,6 +73,7 @@ class ApiClient {
   async clearToken(): Promise<void> {
     await AsyncStorage.removeItem('accessToken');
     await AsyncStorage.removeItem('refreshToken');
+    await AsyncStorage.removeItem('user');
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -103,8 +104,22 @@ class ApiClient {
       body: JSON.stringify(credentials),
     });
     
+    // Validate response has required fields
+    if (!response.accessToken) {
+      throw new Error('Invalid response: missing access token');
+    }
+    
+    if (!response.user) {
+      throw new Error('Invalid response: missing user data');
+    }
+    
+    // Store tokens and user data
     await this.setToken(response.accessToken);
-    await AsyncStorage.setItem('refreshToken', response.refreshToken);
+    
+    if (response.refreshToken) {
+      await AsyncStorage.setItem('refreshToken', response.refreshToken);
+    }
+    
     await AsyncStorage.setItem('user', JSON.stringify(response.user));
     
     return response;

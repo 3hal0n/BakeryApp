@@ -18,7 +18,17 @@ export class AuthService {
     }
 
     const payload: JwtPayload = { userId: user.id, role: user.role };
-    return generateTokens(payload);
+    const tokens = generateTokens(payload);
+    
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    };
   }
 
   static async refresh(refreshToken: string) {
