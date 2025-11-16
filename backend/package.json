@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest --coverage",
     "dev": "ts-node src/server.ts",
+    "seed": "ts-node prisma/seed.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
