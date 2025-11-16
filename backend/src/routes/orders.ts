@@ -2,12 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { OrderService } from '../services/orderService';
-import { createOrderSchema, updateOrderStatusSchema, updatePaymentSchema } from '../schemas/order';
+import { createOrderSchema, updateOrderStatusSchema } from '../schemas/order';
 
 const router = Router();
 
 // Create order
 router.post('/', async (req, res) => {
+  // ... your existing code ...
   try {
     const data = createOrderSchema.parse(req.body);
     const order = await OrderService.createOrder(data, req.user!.userId);
@@ -28,6 +29,7 @@ router.post('/', async (req, res) => {
 
 // Get orders with filters
 router.get('/', async (req, res) => {
+  // ... your existing code ...
   try {
     const {
       date,
@@ -89,8 +91,66 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /this-week (NEW)
+router.get('/this-week', async (req, res) => {
+  try {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // Assuming week starts on Monday
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    const orders = await prisma.order.findMany({
+      where: {
+        pickupAt: {
+          gte: startOfWeek,
+          lte: endOfWeek,
+        },
+      },
+      include: {
+        items: true,
+        creator: { select: { name: true } },
+      },
+      orderBy: { pickupAt: 'asc' },
+    });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch this week\'s orders' });
+  }
+});
+
+// GET /:id (NEW)
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: true,
+        creator: { select: { name: true, email: true } },
+        statusHistory: {
+          include: { user: { select: { name: true } } },
+          orderBy: { changedAt: 'asc' },
+        },
+        payments: true,
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch order' });
+  }
+});
+
 // Update order status
 router.post('/:id/status', async (req, res) => {
+  // ... your existing code ...
   try {
     const { id } = req.params;
     const { to } = updateOrderStatusSchema.parse(req.body);

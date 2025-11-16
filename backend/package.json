@@ -6,6 +6,7 @@
   "scripts": {
     "test": "jest --coverage",
     "dev": "ts-node src/server.ts",
+    "seed": "ts-node prisma/seed.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
@@ -16,11 +17,13 @@
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "argon2": "^0.44.0",
     "bcryptjs": "^3.0.2",
     "bullmq": "^5.58.0",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
+    "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "express-async-handler": "^1.2.0",
     "helmet": "^8.1.0",
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
@@ -29,12 +32,13 @@
     "redis": "^5.8.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2",
-    "zod": "^4.0.17"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@types/argon2": "^0.14.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.3",
+    "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.3.0",
     "prisma": "^6.19.0"

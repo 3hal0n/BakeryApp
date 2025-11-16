@@ -4,7 +4,13 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { prisma } from './lib/prisma';
 import { authenticate } from './lib/auth';
+
+// Import all your routes
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
 import orderRoutes from './routes/orders';
+import reportRoutes from './routes/reports';
+import deviceRoutes from './routes/devices';
 
 // Load environment variables
 dotenv.config();
@@ -17,13 +23,22 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Health check
+// --- Public Routes ---
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Routes
-app.use('/api/orders', authenticate, orderRoutes);
+// Auth routes are public (login/refresh)
+app.use('/api/auth', authRoutes);
+
+// --- Authenticated Routes ---
+// All routes below this line require a valid token
+app.use(authenticate);
+
+app.use('/api/users', userRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/devices', deviceRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
