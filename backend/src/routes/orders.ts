@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { OrderService } from '../services/orderService';
-import { createOrderSchema, updateOrderStatusSchema } from '../schemas/order';
+import { createOrderSchema, updateOrderStatusSchema, updateOrderSchema } from '../schemas/order';
 
 const router = Router();
 
@@ -145,6 +145,25 @@ router.get('/:id', async (req, res) => {
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch order' });
+  }
+});
+
+// PATCH /:id - Update order
+router.patch('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = updateOrderSchema.parse(req.body);
+    
+    const order = await OrderService.updateOrder(id, data);
+    res.json(order);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'Validation failed', details: error.issues });
+    }
+    if (error instanceof Error && error.message === 'Order not found') {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.status(500).json({ error: 'Failed to update order' });
   }
 });
 

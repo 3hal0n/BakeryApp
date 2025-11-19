@@ -97,4 +97,81 @@ export class OrderService {
       return updatedOrder;
     });
   }
+
+  static async updateOrder(orderId: string, data: any) {
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true }
+    });
+
+    if (!existingOrder) {
+      throw new Error('Order not found');
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const updateData: any = {};
+
+      // Update customer info
+      if (data.customer) {
+        updateData.customerName = data.customer.name;
+        updateData.customerPhone = data.customer.phone;
+      }
+
+      // Update pickup date
+      if (data.pickupAt) {
+        updateData.pickupAt = new Date(data.pickupAt);
+      }
+
+      // Update payment
+      if (data.payment) {
+        updateData.paymentStatus = data.payment.status;
+        if (data.payment.advanceAmount !== undefined) {
+          updateData.advanceAmount = new Decimal(data.payment.advanceAmount);
+        }
+      }
+
+      // Update notes
+      if (data.notes !== undefined) {
+        updateData.notes = data.notes;
+      }
+
+      // Handle items update
+      if (data.items) {
+        // Delete existing items
+        await tx.orderItem.deleteMany({
+          where: { orderId }
+        });
+
+        // Calculate new total
+        const totalAmount = data.items.reduce((sum: number, item: any) => {
+          return sum + (item.qty * item.unitPrice);
+        }, 0);
+        updateData.totalAmount = new Decimal(totalAmount);
+
+        // Create new items
+        await Promise.all(
+          data.items.map((item: any) =>
+            tx.orderItem.create({
+              data: {
+                orderId,
+                itemName: item.itemName,
+                qty: item.qty,
+                unitPrice: new Decimal(item.unitPrice),
+                subtotal: new Decimal(item.qty * item.unitPrice)
+              }
+            })
+          )
+        );
+      }
+
+      // Update order
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId },
+        data: updateData,
+        include: { items: true, creator: { select: { name: true } } }
+      });
+
+      return updatedOrder;
+    });
+  }
 }
