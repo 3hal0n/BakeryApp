@@ -184,4 +184,21 @@ router.post('/:id/status', async (req, res) => {
   }
 });
 
+// DELETE /:id - Delete order (soft delete by setting status to CANCELLED)
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Soft delete by cancelling the order
+    const order = await OrderService.updateOrderStatus(id, 'CANCELLED', req.user!.userId);
+    
+    res.json({ message: 'Order deleted successfully', order });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Order not found') {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.status(500).json({ error: 'Failed to delete order' });
+  }
+});
+
 export default router;

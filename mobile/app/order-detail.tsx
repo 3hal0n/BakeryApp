@@ -75,6 +75,34 @@ export default function OrderDetailScreen() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!order) return;
+
+    Alert.alert(
+      'Delete Order',
+      'Are you sure you want to delete this order? This will mark it as cancelled and cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsUpdating(true);
+              await api.deleteOrder(order.id);
+              Alert.alert('Success', 'Order deleted successfully', [
+                { text: 'OK', onPress: () => router.back() }
+              ]);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete order');
+              setIsUpdating(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
       case 'PENDING':
@@ -310,6 +338,20 @@ export default function OrderDetailScreen() {
             )}
           </TouchableOpacity>
         )}
+
+        {order.status !== 'CANCELLED' && order.status !== 'COMPLETED' && (
+          <TouchableOpacity
+            style={[styles.actionButton, styles.deleteButton]}
+            onPress={handleDelete}
+            disabled={isUpdating}
+          >
+            {isUpdating ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.actionButtonText}>🗑️ Delete Order</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.bottomSpace} />
@@ -533,6 +575,11 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: '#f44336',
+  },
+  deleteButton: {
+    backgroundColor: '#d32f2f',
+    borderWidth: 1,
+    borderColor: '#b71c1c',
   },
   actionButtonText: {
     color: '#fff',

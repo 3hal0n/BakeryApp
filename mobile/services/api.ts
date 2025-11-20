@@ -178,6 +178,12 @@ class ApiClient {
       body: JSON.stringify({ to: status }),
     });
   }
+
+  async deleteOrder(orderId: string): Promise<{ message: string; order: Order }> {
+    return this.request(`/orders/${orderId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const api = new ApiClient();
