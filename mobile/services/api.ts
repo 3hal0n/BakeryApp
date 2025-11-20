@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.7:5000/api'; // Change to your backend URL
+const API_URL = 'http://192.168.1.9:5000/api'; // Change to your backend URL
 
 export interface LoginRequest {
   email: string;
