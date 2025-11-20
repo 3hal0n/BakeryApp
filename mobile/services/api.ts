@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.7:5000/api'; // Change to your backend URL
+const API_URL = 'http://192.168.1.9:5000/api'; // Change to your backend URL
 
 export interface LoginRequest {
   email: string;
@@ -31,6 +31,8 @@ export interface Order {
   notes?: string;
   items: OrderItem[];
   creator?: { name: string };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface OrderItem {
@@ -153,6 +155,21 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  async getOrderById(orderId: string): Promise<Order> {
+    return this.request<Order>(`/orders/${orderId}`);
+  }
+
+  async updateOrder(orderId: string, data: Partial<CreateOrderRequest>): Promise<Order> {
+    return this.request<Order>(`/orders/${orderId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getThisWeekOrders(): Promise<Order[]> {
+    return this.request<Order[]>('/orders/this-week');
   }
 
   async updateOrderStatus(orderId: string, status: string): Promise<Order> {

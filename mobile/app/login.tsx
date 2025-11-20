@@ -48,19 +48,6 @@ export default function LoginScreen() {
           <Text style={styles.subtitle}>Login to manage your orders</Text>
         </View>
 
-        <View style={styles.decorativeImages}>
-          <Image 
-            source={require('../assets/images/pic1.png')} 
-            style={styles.decorImage}
-            resizeMode="cover"
-          />
-          <Image 
-            source={require('../assets/images/pic2.png')} 
-            style={styles.decorImage}
-            resizeMode="cover"
-          />
-        </View>
-
         <View style={styles.formContainer}>
           <Input
             label="Email"
@@ -125,19 +112,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#78350F',
-  },
-  decorativeImages: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    marginBottom: 32,
-  },
-  decorImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#FDE68A',
   },
   formContainer: {
     backgroundColor: '#FFF',
