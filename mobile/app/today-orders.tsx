@@ -155,7 +155,7 @@ export default function TodayOrdersScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Loading today's orders...</Text>
+        <Text style={styles.loadingText}>Loading today&apos;s orders...</Text>
       </View>
     );
   }
@@ -164,7 +164,7 @@ export default function TodayOrdersScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Today's Orders</Text>
+          <Text style={styles.title}>Today&apos;s Orders</Text>
           <Text style={styles.subtitle}>
             {new Date().toLocaleDateString('en-US', { 
               weekday: 'long', 
