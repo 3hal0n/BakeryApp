@@ -13,12 +13,13 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
+    const isModalOrDetailScreen = ['new-order', 'add-order', 'edit-order', 'order-detail', 'today-orders'].includes(segments[0]);
 
     if (!user && inAuthGroup) {
       // Redirect to login if not authenticated
       router.replace('/login');
-    } else if (user && !inAuthGroup) {
-      // Redirect to tabs if authenticated
+    } else if (user && !inAuthGroup && !isModalOrDetailScreen && segments[0] !== 'login') {
+      // Redirect to tabs if authenticated (but allow modal/detail screens)
       router.replace('/(tabs)');
     }
   }, [user, isLoading, segments]);
@@ -33,6 +34,40 @@ function RootLayoutNav() {
           options={{ 
             presentation: 'modal',
             title: 'New Order',
+            headerStyle: { backgroundColor: '#FEF3C7' },
+            headerTintColor: '#92400E',
+          }} 
+        />
+        <Stack.Screen 
+          name="add-order" 
+          options={{ 
+            presentation: 'modal',
+            title: 'Add Order',
+            headerStyle: { backgroundColor: '#FEF3C7' },
+            headerTintColor: '#92400E',
+          }} 
+        />
+        <Stack.Screen 
+          name="edit-order" 
+          options={{ 
+            presentation: 'modal',
+            title: 'Edit Order',
+            headerStyle: { backgroundColor: '#FEF3C7' },
+            headerTintColor: '#92400E',
+          }} 
+        />
+        <Stack.Screen 
+          name="order-detail" 
+          options={{ 
+            title: 'Order Details',
+            headerStyle: { backgroundColor: '#FEF3C7' },
+            headerTintColor: '#92400E',
+          }} 
+        />
+        <Stack.Screen 
+          name="today-orders" 
+          options={{ 
+            title: 'Today\'s Orders',
             headerStyle: { backgroundColor: '#FEF3C7' },
             headerTintColor: '#92400E',
           }} 

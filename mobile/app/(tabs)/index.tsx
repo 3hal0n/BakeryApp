@@ -73,12 +73,6 @@ export default function DashboardScreen() {
         <Text style={styles.headerTitle}>Order Dashboard</Text>
       </View>
 
-      <View style={styles.decorBanner}>
-        <Image source={require('../../assets/images/pic6.png')} style={styles.bannerImage} />
-        <Image source={require('../../assets/images/pic7.png')} style={styles.bannerImage} />
-        <Image source={require('../../assets/images/pic8.png')} style={styles.bannerImage} />
-      </View>
-
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{orders.length}</Text>
@@ -93,7 +87,7 @@ export default function DashboardScreen() {
           <Text style={styles.statLabel}>Ready</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: '#10B981' }]}>₱{totalAmount.toFixed(0)}</Text>
+          <Text style={[styles.statValue, { color: '#10B981' }]}>LKR {totalAmount.toFixed(0)}</Text>
           <Text style={styles.statLabel}>Total</Text>
         </View>
       </View>
@@ -174,18 +168,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#92400E',
-  },
-  decorBanner: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    backgroundColor: '#FFFBEB',
-  },
-  bannerImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
   },
   statsContainer: {
     flexDirection: 'row',

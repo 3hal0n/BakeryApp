@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, OrderItem } from '../services/api';
 import { Input } from '../components/Input';
@@ -90,11 +90,6 @@ export default function NewOrderScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Image 
-          source={require('../assets/images/pic3.png')} 
-          style={styles.headerImage}
-          resizeMode="cover"
-        />
         <Text style={styles.title}>New Order</Text>
       </View>
 
@@ -169,7 +164,7 @@ export default function NewOrderScreen() {
               </View>
               <View style={styles.halfWidth}>
                 <Input
-                  label="Unit Price (₱)"
+                  label="Unit Price (LKR)"
                   value={String(item.unitPrice)}
                   onChangeText={(text) => updateItem(index, 'unitPrice', parseFloat(text) || 0)}
                   keyboardType="decimal-pad"
@@ -179,7 +174,7 @@ export default function NewOrderScreen() {
             </View>
 
             <Text style={styles.subtotal}>
-              Subtotal: ₱{(item.qty * item.unitPrice).toFixed(2)}
+              Subtotal: LKR {(item.qty * item.unitPrice).toFixed(2)}
             </Text>
           </View>
         ))}
@@ -210,7 +205,7 @@ export default function NewOrderScreen() {
 
         {paymentStatus === 'ADVANCE' && (
           <Input
-            label="Advance Amount (₱)"
+            label="Advance Amount (LKR)"
             value={advanceAmount}
             onChangeText={setAdvanceAmount}
             keyboardType="decimal-pad"
@@ -233,7 +228,7 @@ export default function NewOrderScreen() {
 
       <View style={styles.totalContainer}>
         <Text style={styles.totalLabel}>Total Amount:</Text>
-        <Text style={styles.totalAmount}>₱{calculateTotal().toFixed(2)}</Text>
+        <Text style={styles.totalAmount}>LKR {calculateTotal().toFixed(2)}</Text>
       </View>
 
       <Button
@@ -242,11 +237,6 @@ export default function NewOrderScreen() {
         loading={loading}
         style={styles.submitButton}
       />
-
-      <View style={styles.decorFooter}>
-        <Image source={require('../assets/images/pic4.png')} style={styles.footerImage} />
-        <Image source={require('../assets/images/pic5.png')} style={styles.footerImage} />
-      </View>
     </ScrollView>
   );
 }
@@ -263,12 +253,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 24,
-  },
-  headerImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 12,
   },
   title: {
     fontSize: 24,
@@ -390,15 +374,5 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginBottom: 24,
-  },
-  decorFooter: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  footerImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
   },
 });

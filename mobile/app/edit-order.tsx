@@ -361,7 +361,7 @@ export default function EditOrderScreen() {
             <View style={styles.subtotalRow}>
               <Text style={styles.subtotalLabel}>Subtotal:</Text>
               <Text style={styles.subtotalValue}>
-                ${((items[index]?.qty || 0) * (items[index]?.unitPrice || 0)).toFixed(2)}
+                LKR {((items[index]?.qty || 0) * (items[index]?.unitPrice || 0)).toFixed(2)}
               </Text>
             </View>
           </View>
@@ -422,18 +422,18 @@ export default function EditOrderScreen() {
         <View style={styles.paymentSummary}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Amount:</Text>
-            <Text style={styles.summaryValue}>${total.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>LKR {total.toFixed(2)}</Text>
           </View>
           {paymentStatus !== 'PAID' && (
             <>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Advance Paid:</Text>
-                <Text style={styles.summaryValue}>${advanceAmount.toFixed(2)}</Text>
+                <Text style={styles.summaryValue}>LKR {advanceAmount.toFixed(2)}</Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, styles.balanceLabel]}>Balance Due:</Text>
                 <Text style={[styles.summaryValue, styles.balanceValue]}>
-                  ${balance.toFixed(2)}
+                  LKR {balance.toFixed(2)}
                 </Text>
               </View>
             </>

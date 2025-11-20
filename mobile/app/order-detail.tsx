@@ -195,12 +195,12 @@ export default function OrderDetailScreen() {
             <View style={styles.itemHeader}>
               <Text style={styles.itemName}>{item.itemName}</Text>
               <Text style={styles.itemSubtotal}>
-                ${parseFloat((item.subtotal || 0).toString()).toFixed(2)}
+                LKR {parseFloat((item.subtotal || 0).toString()).toFixed(2)}
               </Text>
             </View>
             <View style={styles.itemDetails}>
               <Text style={styles.itemDetailText}>
-                Qty: {item.qty} × ${parseFloat(item.unitPrice.toString()).toFixed(2)}
+                Qty: {item.qty} × LKR {parseFloat(item.unitPrice.toString()).toFixed(2)}
               </Text>
             </View>
           </View>
@@ -222,17 +222,17 @@ export default function OrderDetailScreen() {
         <View style={styles.paymentBreakdown}>
           <View style={styles.paymentRow}>
             <Text style={styles.paymentLabel}>Total Amount:</Text>
-            <Text style={styles.paymentValue}>${totalAmount.toFixed(2)}</Text>
+            <Text style={styles.paymentValue}>LKR {totalAmount.toFixed(2)}</Text>
           </View>
           {order.paymentStatus !== 'PAID' && (
             <>
               <View style={styles.paymentRow}>
                 <Text style={styles.paymentLabel}>Advance Paid:</Text>
-                <Text style={styles.paymentValue}>${advanceAmount.toFixed(2)}</Text>
+                <Text style={styles.paymentValue}>LKR {advanceAmount.toFixed(2)}</Text>
               </View>
               <View style={[styles.paymentRow, styles.balanceRow]}>
                 <Text style={styles.balanceLabel}>Balance Due:</Text>
-                <Text style={styles.balanceValue}>${balance.toFixed(2)}</Text>
+                <Text style={styles.balanceValue}>LKR {balance.toFixed(2)}</Text>
               </View>
             </>
           )}

@@ -132,7 +132,7 @@ export default function TodayOrdersScreen() {
             {item.paymentStatus}
           </Text>
         </View>
-        <Text style={styles.totalAmount}>${parseFloat(item.totalAmount.toString()).toFixed(2)}</Text>
+        <Text style={styles.totalAmount}>LKR {parseFloat(item.totalAmount.toString()).toFixed(2)}</Text>
       </View>
     </TouchableOpacity>
   );

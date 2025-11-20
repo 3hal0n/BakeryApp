@@ -58,12 +58,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View style={styles.decorImages}>
-          <Image source={require('../../assets/images/pic1.png')} style={styles.decorImage} />
-          <Image source={require('../../assets/images/pic2.png')} style={styles.decorImage} />
-          <Image source={require('../../assets/images/pic3.png')} style={styles.decorImage} />
-        </View>
-
         <Button
           title="Logout"
           onPress={handleLogout}
@@ -151,17 +145,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1F2937',
     fontWeight: '500',
-  },
-  decorImages: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    marginBottom: 24,
-  },
-  decorImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
   },
   logoutButton: {
     marginTop: 'auto',
