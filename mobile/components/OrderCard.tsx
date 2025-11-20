@@ -47,7 +47,7 @@ export function OrderCard({ order, onPress }: OrderCardProps) {
 
         <View style={styles.row}>
           <Text style={styles.label}>Total:</Text>
-          <Text style={styles.totalAmount}>₱{order.totalAmount.toFixed(2)}</Text>
+          <Text style={styles.totalAmount}>LKR {parseFloat(order.totalAmount.toString()).toFixed(2)}</Text>
         </View>
 
         <View style={styles.row}>

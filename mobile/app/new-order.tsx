@@ -1,33 +1,45 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { api, OrderItem } from '../services/api';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { api } from '../services/api';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+
+type ItemUnit = 'pcs' | 'kg' | 'g' | 'dozen';
+
+interface ExtendedOrderItem {
+  itemName: string;
+  qty: number;
+  unit: ItemUnit;
+  unitPrice: number;
+}
 
 export default function NewOrderScreen() {
   const router = useRouter();
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [pickupDate, setPickupDate] = useState('');
-  const [pickupTime, setPickupTime] = useState('');
+  const [pickupDate, setPickupDate] = useState(new Date());
+  const [pickupTime, setPickupTime] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [notes, setNotes] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'PAID' | 'ADVANCE' | 'UNPAID'>('UNPAID');
   const [advanceAmount, setAdvanceAmount] = useState('');
-  const [items, setItems] = useState<OrderItem[]>([
-    { itemName: '', qty: 1, unitPrice: 0 }
+  const [items, setItems] = useState<ExtendedOrderItem[]>([
+    { itemName: '', qty: 1, unit: 'pcs', unitPrice: 0 }
   ]);
   const [loading, setLoading] = useState(false);
 
   const addItem = () => {
-    setItems([...items, { itemName: '', qty: 1, unitPrice: 0 }]);
+    setItems([...items, { itemName: '', qty: 1, unit: 'pcs', unitPrice: 0 }]);
   };
 
   const removeItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const updateItem = (index: number, field: keyof OrderItem, value: any) => {
+  const updateItem = (index: number, field: keyof ExtendedOrderItem, value: any) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);
@@ -44,11 +56,6 @@ export default function NewOrderScreen() {
       return;
     }
 
-    if (!pickupDate || !pickupTime) {
-      Alert.alert('Error', 'Please enter pickup date and time');
-      return;
-    }
-
     if (items.length === 0 || items.some(i => !i.itemName || i.qty <= 0 || i.unitPrice <= 0)) {
       Alert.alert('Error', 'Please add at least one valid item');
       return;
@@ -57,16 +64,18 @@ export default function NewOrderScreen() {
     setLoading(true);
     try {
       // Combine date and time
-      const pickupDateTime = `${pickupDate}T${pickupTime}:00.000Z`;
+      const combinedDateTime = new Date(pickupDate);
+      combinedDateTime.setHours(pickupTime.getHours());
+      combinedDateTime.setMinutes(pickupTime.getMinutes());
 
       await api.createOrder({
         customer: {
           name: customerName,
           phone: customerPhone,
         },
-        pickupAt: pickupDateTime,
+        pickupAt: combinedDateTime.toISOString(),
         items: items.map(item => ({
-          itemName: item.itemName,
+          itemName: `${item.itemName} (${item.qty} ${item.unit})`,
           qty: item.qty,
           unitPrice: item.unitPrice,
         })),
@@ -112,18 +121,65 @@ export default function NewOrderScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Pickup Details</Text>
-        <Input
-          label="Pickup Date (YYYY-MM-DD)"
-          value={pickupDate}
-          onChangeText={setPickupDate}
-          placeholder="2025-11-17"
-        />
-        <Input
-          label="Pickup Time (HH:MM)"
-          value={pickupTime}
-          onChangeText={setPickupTime}
-          placeholder="14:00"
-        />
+        
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Pickup Date *</Text>
+          <TouchableOpacity 
+            style={styles.dateButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.dateText}>
+              {pickupDate.toLocaleDateString('en-US', { 
+                weekday: 'short',
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              })}
+            </Text>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={pickupDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, selectedDate) => {
+                setShowDatePicker(Platform.OS === 'ios');
+                if (selectedDate) {
+                  setPickupDate(selectedDate);
+                }
+              }}
+              minimumDate={new Date()}
+            />
+          )}
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Pickup Time *</Text>
+          <TouchableOpacity 
+            style={styles.dateButton}
+            onPress={() => setShowTimePicker(true)}
+          >
+            <Text style={styles.dateText}>
+              {pickupTime.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </Text>
+          </TouchableOpacity>
+          {showTimePicker && (
+            <DateTimePicker
+              value={pickupTime}
+              mode="time"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(event, selectedTime) => {
+                setShowTimePicker(Platform.OS === 'ios');
+                if (selectedTime) {
+                  setPickupTime(selectedTime);
+                }
+              }}
+            />
+          )}
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -157,12 +213,39 @@ export default function NewOrderScreen() {
                 <Input
                   label="Quantity"
                   value={String(item.qty)}
-                  onChangeText={(text) => updateItem(index, 'qty', parseInt(text) || 1)}
-                  keyboardType="numeric"
+                  onChangeText={(text) => updateItem(index, 'qty', parseFloat(text) || 1)}
+                  keyboardType="decimal-pad"
                   placeholder="1"
                 />
               </View>
               <View style={styles.halfWidth}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Unit *</Text>
+                  <View style={styles.unitButtons}>
+                    {(['pcs', 'kg', 'g', 'dozen'] as const).map((unit) => (
+                      <TouchableOpacity
+                        key={unit}
+                        style={[
+                          styles.unitButton,
+                          item.unit === unit && styles.unitButtonActive
+                        ]}
+                        onPress={() => updateItem(index, 'unit', unit)}
+                      >
+                        <Text style={[
+                          styles.unitButtonText,
+                          item.unit === unit && styles.unitButtonTextActive
+                        ]}>
+                          {unit}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.fullWidth}>
                 <Input
                   label="Unit Price (LKR)"
                   value={String(item.unitPrice)}
@@ -374,5 +457,54 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginBottom: 24,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
+  },
+  dateButton: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#374151',
+  },
+  unitButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  unitButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#FFF',
+  },
+  unitButtonActive: {
+    borderColor: '#D97706',
+    backgroundColor: '#FEF3C7',
+  },
+  unitButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  unitButtonTextActive: {
+    color: '#92400E',
+  },
+  fullWidth: {
+    flex: 1,
   },
 });
