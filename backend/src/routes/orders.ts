@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { OrderService } from '../services/orderService';
 import { createOrderSchema, updateOrderStatusSchema, updateOrderSchema } from '../schemas/order';
+import { scheduleOrderNotifications } from '../queues/notificationQueue';
 
 const router = Router();
 
@@ -12,6 +13,15 @@ router.post('/', async (req, res) => {
   try {
     const data = createOrderSchema.parse(req.body);
     const order = await OrderService.createOrder(data, req.user!.userId);
+    
+    // Schedule notifications for the new order
+    try {
+      await scheduleOrderNotifications(order.id);
+      console.log(`✅ Scheduled notifications for order ${order.orderNo}`);
+    } catch (notifError) {
+      console.error('Failed to schedule notifications:', notifError);
+      // Don't fail the order creation if notification scheduling fails
+    }
     
     res.status(201).json({
       orderId: order.id,
@@ -188,6 +198,15 @@ router.post('/:id/status', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Cancel any scheduled notifications first
+    const { cancelOrderNotifications } = await import('../queues/notificationQueue');
+    try {
+      await cancelOrderNotifications(id);
+      console.log(`✅ Cancelled notifications for order ${id}`);
+    } catch (notifError) {
+      console.error('Failed to cancel notifications:', notifError);
+    }
     
     // Soft delete by cancelling the order
     const order = await OrderService.updateOrderStatus(id, 'CANCELLED', req.user!.userId);

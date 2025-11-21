@@ -60,14 +60,16 @@ model User {
   role          UserRole
   passwordHash  String    @map("password_hash")
   isActive      Boolean   @default(true) @map("is_active")
+  pushToken     String?   @map("push_token")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  deviceTokens      DeviceToken[]
-  createdOrders     Order[]       @relation("OrderCreator")
-  statusChanges     OrderStatusHistory[]
-  notifications     Notification[]
+  deviceTokens          DeviceToken[]
+  createdOrders         Order[]                @relation("OrderCreator")
+  statusChanges         OrderStatusHistory[]
+  userNotifications     UserNotification[]
+  scheduledNotifications Notification[]
 
   @@map("users")
 }
@@ -101,11 +103,12 @@ model Order {
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  creator       User                 @relation("OrderCreator", fields: [createdBy], references: [id])
-  items         OrderItem[]
-  payments      Payment[]
-  statusHistory OrderStatusHistory[]
-  notifications Notification[]
+  creator               User                   @relation("OrderCreator", fields: [createdBy], references: [id])
+  items                 OrderItem[]
+  payments              Payment[]
+  statusHistory         OrderStatusHistory[]
+  userNotifications     UserNotification[]
+  scheduledNotifications Notification[]
 
   @@index([pickupAt])
   @@index([status])
@@ -186,4 +189,23 @@ model Notification {
 
   @@index([scheduledFor, status])
   @@map("notifications")
+}
+
+model UserNotification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  orderId   String?  @map("order_id")
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("user_notifications")
 }
