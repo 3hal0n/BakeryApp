@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, LoginRequest } from '../services/api';
+import { NotificationService } from '../services/notifications';
 
 interface User {
   id: string;
@@ -44,6 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (credentials: LoginRequest) => {
     const response = await api.login(credentials);
     setUser(response.user);
+    
+    // Register for push notifications after successful login
+    try {
+      await NotificationService.registerForPushNotifications();
+    } catch (error) {
+      console.error('Failed to register push notifications:', error);
+    }
   };
 
   const logout = async () => {

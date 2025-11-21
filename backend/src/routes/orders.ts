@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { OrderService } from '../services/orderService';
 import { createOrderSchema, updateOrderStatusSchema, updateOrderSchema } from '../schemas/order';
+import { scheduleOrderNotifications } from '../queues/notificationQueue';
 
 const router = Router();
 
@@ -12,6 +13,15 @@ router.post('/', async (req, res) => {
   try {
     const data = createOrderSchema.parse(req.body);
     const order = await OrderService.createOrder(data, req.user!.userId);
+    
+    // Schedule notifications for the new order
+    try {
+      await scheduleOrderNotifications(order.id);
+      console.log(`✅ Scheduled notifications for order ${order.orderNo}`);
+    } catch (notifError) {
+      console.error('Failed to schedule notifications:', notifError);
+      // Don't fail the order creation if notification scheduling fails
+    }
     
     res.status(201).json({
       orderId: order.id,
@@ -181,6 +191,32 @@ router.post('/:id/status', async (req, res) => {
       return res.status(400).json({ error: 'Validation failed', details: error.issues });
     }
     res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
+// DELETE /:id - Delete order (soft delete by setting status to CANCELLED)
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Cancel any scheduled notifications first
+    const { cancelOrderNotifications } = await import('../queues/notificationQueue');
+    try {
+      await cancelOrderNotifications(id);
+      console.log(`✅ Cancelled notifications for order ${id}`);
+    } catch (notifError) {
+      console.error('Failed to cancel notifications:', notifError);
+    }
+    
+    // Soft delete by cancelling the order
+    const order = await OrderService.updateOrderStatus(id, 'CANCELLED', req.user!.userId);
+    
+    res.json({ message: 'Order deleted successfully', order });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Order not found') {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    res.status(500).json({ error: 'Failed to delete order' });
   }
 });
 

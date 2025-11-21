@@ -1,12 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/Button';
+import { api } from '../../services/api';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    loadUnreadCount();
+    // Refresh count every 30 seconds
+    const interval = setInterval(loadUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadUnreadCount = async () => {
+    try {
+      const notifications = await api.getNotifications();
+      const unread = notifications.filter((n: any) => !n.read).length;
+      setUnreadCount(unread);
+    } catch (error) {
+      console.error('Failed to load notification count:', error);
+    }
+  };
+
+  const handleNotificationsPress = () => {
+    router.push('/notifications' as any);
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -42,6 +65,35 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.content}>
+        <TouchableOpacity style={styles.menuCard} onPress={handleNotificationsPress}>
+          <View style={styles.menuIcon}>
+            <Text style={styles.iconText}>🔔</Text>
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.menuContent}>
+            <Text style={styles.menuTitle}>Notifications</Text>
+            <Text style={styles.menuSubtitle}>
+              {unreadCount > 0 ? `${unreadCount} unread` : 'No new notifications'}
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/dashboard' as any)}>
+          <View style={styles.menuIcon}>
+            <Text style={styles.iconText}>📊</Text>
+          </View>
+          <View style={styles.menuContent}>
+            <Text style={styles.menuTitle}>Manager Dashboard</Text>
+            <Text style={styles.menuSubtitle}>View reports, stats & analytics</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
         <View style={styles.infoCard}>
           <Text style={styles.cardTitle}>Account Information</Text>
           <View style={styles.infoRow}>
@@ -148,5 +200,60 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: 'auto',
+  },
+  menuCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  menuIcon: {
+    position: 'relative',
+    marginRight: 16,
+  },
+  iconText: {
+    fontSize: 32,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#f44336',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  menuContent: {
+    flex: 1,
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  menuSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  chevron: {
+    fontSize: 24,
+    color: '#9CA3AF',
+    fontWeight: '300',
   },
 });

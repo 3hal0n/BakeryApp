@@ -11,6 +11,10 @@ import userRoutes from './routes/users';
 import orderRoutes from './routes/orders';
 import reportRoutes from './routes/reports';
 import deviceRoutes from './routes/devices';
+import notificationRoutes from './routes/notifications';
+
+// Initialize notification queue and worker
+import './queues/notificationQueue';
 
 // Load environment variables
 dotenv.config();
@@ -39,6 +43,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/devices', deviceRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -57,7 +62,14 @@ const server = app.listen(PORT, () => {
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, closing server...');
   server.close(async () => {
+    const { notificationQueue, notificationWorker } = await import('./queues/notificationQueue');
+    const { redisConnection } = await import('./config/redis');
+    
+    await notificationWorker.close();
+    await notificationQueue.close();
+    await redisConnection.quit();
     await prisma.$disconnect();
+    
     console.log('Server closed');
     process.exit(0);
   });
@@ -66,7 +78,14 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('SIGINT received, closing server...');
   server.close(async () => {
+    const { notificationQueue, notificationWorker } = await import('./queues/notificationQueue');
+    const { redisConnection } = await import('./config/redis');
+    
+    await notificationWorker.close();
+    await notificationQueue.close();
+    await redisConnection.quit();
     await prisma.$disconnect();
+    
     console.log('Server closed');
     process.exit(0);
   });

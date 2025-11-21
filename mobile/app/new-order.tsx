@@ -213,7 +213,10 @@ export default function NewOrderScreen() {
                 <Input
                   label="Quantity"
                   value={String(item.qty)}
-                  onChangeText={(text) => updateItem(index, 'qty', parseFloat(text) || 1)}
+                  onChangeText={(text) => {
+                    const value = text === '' ? 0 : parseFloat(text);
+                    updateItem(index, 'qty', isNaN(value) ? 0 : value);
+                  }}
                   keyboardType="decimal-pad"
                   placeholder="1"
                 />
