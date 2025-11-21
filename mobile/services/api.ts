@@ -61,6 +61,15 @@ export interface CreateOrderRequest {
   notes?: string;
 }
 
+export interface OrderFilters {
+  id?: string;
+  date?: string;
+  from?: string;
+  to?: string;
+  status?: string[];
+  payment?: string[];
+}
+
 class ApiClient {
   private baseUrl = API_URL;
 
@@ -132,13 +141,7 @@ class ApiClient {
   }
 
   // Orders
-  async getOrders(filters?: {
-    date?: string;
-    from?: string;
-    to?: string;
-    status?: string[];
-    payment?: string[];
-  }): Promise<Order[]> {
+  async getOrders(filters?: OrderFilters): Promise<Order[]> {
     const params = new URLSearchParams();
     if (filters?.date) params.append('date', filters.date);
     if (filters?.from) params.append('from', filters.from);

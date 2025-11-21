@@ -94,6 +94,17 @@ export default function ProfileScreen() {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/settings' as any)}>
+          <View style={styles.menuIcon}>
+            <Text style={styles.iconText}>⚙️</Text>
+          </View>
+          <View style={styles.menuContent}>
+            <Text style={styles.menuTitle}>Settings</Text>
+            <Text style={styles.menuSubtitle}>Notifications, quiet hours & preferences</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
         <View style={styles.infoCard}>
           <Text style={styles.cardTitle}>Account Information</Text>
           <View style={styles.infoRow}>

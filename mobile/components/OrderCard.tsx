@@ -5,9 +5,12 @@ import { Order } from '../services/api';
 interface OrderCardProps {
   order: Order;
   onPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  showActions?: boolean;
 }
 
-export function OrderCard({ order, onPress }: OrderCardProps) {
+export function OrderCard({ order, onPress, onEdit, onDelete, showActions = false }: OrderCardProps) {
   const statusColor = 
     order.status === 'COMPLETED' ? '#10B981' :
     order.status === 'READY' ? '#3B82F6' :
@@ -61,6 +64,21 @@ export function OrderCard({ order, onPress }: OrderCardProps) {
           <Text style={styles.notes} numberOfLines={2}>
             Note: {order.notes}
           </Text>
+        )}
+
+        {showActions && order.status !== 'CANCELLED' && order.status !== 'COMPLETED' && (
+          <View style={styles.actions}>
+            {onEdit && (
+              <TouchableOpacity style={styles.editButton} onPress={onEdit}>
+                <Text style={styles.editButtonText}>✏️ Edit</Text>
+              </TouchableOpacity>
+            )}
+            {onDelete && (
+              <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
+                <Text style={styles.deleteButtonText}>🗑️ Delete</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -140,5 +158,39 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontStyle: 'italic',
     marginTop: 4,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  editButton: {
+    flex: 1,
+    backgroundColor: '#3B82F6',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: '#EF4444',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
