@@ -3,6 +3,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { NotificationService } from '../services/notifications';
+import * as Notifications from 'expo-notifications';
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
@@ -13,7 +15,7 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
-    const isModalOrDetailScreen = ['new-order', 'add-order', 'edit-order', 'order-detail', 'today-orders'].includes(segments[0]);
+    const isModalOrDetailScreen = ['new-order', 'add-order', 'edit-order', 'order-detail', 'today-orders', 'notifications'].includes(segments[0] as string);
 
     if (!user && inAuthGroup) {
       // Redirect to login if not authenticated
@@ -23,6 +25,30 @@ function RootLayoutNav() {
       router.replace('/(tabs)');
     }
   }, [user, isLoading, segments]);
+
+  // Setup notification listeners
+  useEffect(() => {
+    if (!user) return;
+
+    // Setup listeners
+    NotificationService.setupNotificationListeners(
+      (notification) => {
+        console.log('Notification received in app:', notification);
+      },
+      (response) => {
+        console.log('Notification tapped:', response);
+        // Navigate to order detail if notification contains orderId
+        const orderId = response.notification.request.content.data?.orderId;
+        if (orderId) {
+          router.push(`/order-detail?id=${orderId}`);
+        }
+      }
+    );
+
+    return () => {
+      NotificationService.removeNotificationListeners();
+    };
+  }, [user, router]);
 
   return (
     <>
@@ -68,6 +94,14 @@ function RootLayoutNav() {
           name="today-orders" 
           options={{ 
             title: 'Today\'s Orders',
+            headerStyle: { backgroundColor: '#FEF3C7' },
+            headerTintColor: '#92400E',
+          }} 
+        />
+        <Stack.Screen 
+          name="notifications" 
+          options={{ 
+            title: 'Notifications',
             headerStyle: { backgroundColor: '#FEF3C7' },
             headerTintColor: '#92400E',
           }} 

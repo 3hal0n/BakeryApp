@@ -184,6 +184,30 @@ class ApiClient {
       method: 'DELETE',
     });
   }
+
+  // Notifications
+  async registerPushToken(pushToken: string): Promise<void> {
+    await this.request('/notifications/register-token', {
+      method: 'POST',
+      body: JSON.stringify({ pushToken }),
+    });
+  }
+
+  async getNotifications(): Promise<any[]> {
+    return this.request('/notifications');
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    await this.request(`/notifications/${notificationId}/read`, {
+      method: 'PATCH',
+    });
+  }
+
+  async markAllNotificationsAsRead(): Promise<void> {
+    await this.request('/notifications/mark-all-read', {
+      method: 'PATCH',
+    });
+  }
 }
 
 export const api = new ApiClient();
