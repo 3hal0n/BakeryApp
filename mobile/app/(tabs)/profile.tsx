@@ -65,20 +65,31 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.content}>
-        <TouchableOpacity style={styles.notificationCard} onPress={handleNotificationsPress}>
-          <View style={styles.notificationIcon}>
-            <Text style={styles.bellIcon}>🔔</Text>
+        <TouchableOpacity style={styles.menuCard} onPress={handleNotificationsPress}>
+          <View style={styles.menuIcon}>
+            <Text style={styles.iconText}>🔔</Text>
             {unreadCount > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
               </View>
             )}
           </View>
-          <View style={styles.notificationContent}>
-            <Text style={styles.notificationTitle}>Notifications</Text>
-            <Text style={styles.notificationSubtitle}>
+          <View style={styles.menuContent}>
+            <Text style={styles.menuTitle}>Notifications</Text>
+            <Text style={styles.menuSubtitle}>
               {unreadCount > 0 ? `${unreadCount} unread` : 'No new notifications'}
             </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/dashboard' as any)}>
+          <View style={styles.menuIcon}>
+            <Text style={styles.iconText}>📊</Text>
+          </View>
+          <View style={styles.menuContent}>
+            <Text style={styles.menuTitle}>Manager Dashboard</Text>
+            <Text style={styles.menuSubtitle}>View reports, stats & analytics</Text>
           </View>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
@@ -190,24 +201,24 @@ const styles = StyleSheet.create({
   logoutButton: {
     marginTop: 'auto',
   },
-  notificationCard: {
+  menuCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  notificationIcon: {
+  menuIcon: {
     position: 'relative',
     marginRight: 16,
   },
-  bellIcon: {
+  iconText: {
     fontSize: 32,
   },
   badge: {
@@ -227,16 +238,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
-  notificationContent: {
+  menuContent: {
     flex: 1,
   },
-  notificationTitle: {
+  menuTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
     marginBottom: 4,
   },
-  notificationSubtitle: {
+  menuSubtitle: {
     fontSize: 14,
     color: '#6B7280',
   },

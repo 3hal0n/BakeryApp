@@ -15,7 +15,7 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
-    const isModalOrDetailScreen = ['new-order', 'add-order', 'edit-order', 'order-detail', 'today-orders', 'notifications'].includes(segments[0] as string);
+    const isModalOrDetailScreen = ['new-order', 'add-order', 'edit-order', 'order-detail', 'today-orders', 'notifications', 'dashboard'].includes(segments[0] as string);
 
     if (!user && inAuthGroup) {
       // Redirect to login if not authenticated
@@ -104,6 +104,12 @@ function RootLayoutNav() {
             title: 'Notifications',
             headerStyle: { backgroundColor: '#FEF3C7' },
             headerTintColor: '#92400E',
+          }} 
+        />
+        <Stack.Screen 
+          name="dashboard" 
+          options={{ 
+            headerShown: false,
           }} 
         />
       </Stack>

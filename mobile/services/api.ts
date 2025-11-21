@@ -208,6 +208,32 @@ class ApiClient {
       method: 'PATCH',
     });
   }
+
+  // Reports
+  async getDashboardSummary(): Promise<any> {
+    return this.request('/reports/dashboard-summary');
+  }
+
+  async getDailySales(from?: string, to?: string): Promise<any> {
+    const params = new URLSearchParams();
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    const queryString = params.toString();
+    return this.request(`/reports/daily-sales${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getPopularItems(from?: string, to?: string, limit: number = 10): Promise<any> {
+    const params = new URLSearchParams();
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    params.append('limit', limit.toString());
+    const queryString = params.toString();
+    return this.request(`/reports/popular-items${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getPendingOrders(): Promise<any> {
+    return this.request('/reports/pending-orders');
+  }
 }
 
 export const api = new ApiClient();
