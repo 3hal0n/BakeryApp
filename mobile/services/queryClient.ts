@@ -1,7 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
-import { persistStorage } from './storage';
+import { asyncStorage, syncStorage } from './storage';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
+import type { Persister } from '@tanstack/query-persist-client-core';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,9 +21,33 @@ export const queryClient = new QueryClient({
   },
 });
 
-export const persister = createSyncStoragePersister({
-  storage: persistStorage,
-});
+export const persister: Persister = syncStorage
+  ? (createSyncStoragePersister({ storage: syncStorage as any }) as Persister)
+  : {
+      persistClient: async (client) => {
+        try {
+          await asyncStorage.setItem('tanstack-query', JSON.stringify(client));
+        } catch (e) {
+          console.warn('Failed to persist query client', (e as any)?.message ?? e);
+        }
+      },
+      restoreClient: async () => {
+        try {
+          const str = await asyncStorage.getItem('tanstack-query');
+          return str ? JSON.parse(str) : undefined;
+        } catch (e) {
+          console.warn('Failed to restore persisted queries', (e as any)?.message ?? e);
+          return undefined;
+        }
+      },
+      removeClient: async () => {
+        try {
+          await asyncStorage.removeItem('tanstack-query');
+        } catch (e) {
+          console.warn('Failed to remove persisted queries', (e as any)?.message ?? e);
+        }
+      },
+    };
 
 // Query keys
 export const queryKeys = {

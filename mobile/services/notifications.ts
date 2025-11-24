@@ -1,29 +1,46 @@
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { api } from './api';
 
-// Configure notification behavior when app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Only import and configure expo-notifications if NOT in Expo Go
+// This prevents the warning about push notifications being removed from Expo Go
+let Notifications: any = null;
+const isExpoGo = Constants.appOwnership === 'expo';
+
+if (!isExpoGo) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  Notifications = require('expo-notifications');
+  
+  // Configure notification behavior when app is in foreground
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export class NotificationService {
-  private static notificationListener: Notifications.Subscription | null = null;
-  private static responseListener: Notifications.Subscription | null = null;
+  private static notificationListener: any = null;
+  private static responseListener: any = null;
 
   /**
    * Register for push notifications and send token to backend
    */
   static async registerForPushNotifications(): Promise<string | null> {
     try {
+      // When running inside Expo Go (appOwnership === 'expo'), remote push
+      // notifications are not supported anymore. In that case, skip trying to
+      // get an Expo push token and instruct developer to use a dev build.
+      if (Constants.appOwnership === 'expo') {
+        console.warn('Running inside Expo Go: remote push notifications are not supported. Create a development build (EAS) to test push notifications.');
+        return null;
+      }
+
       // Check if running on physical device
       if (!Device.isDevice) {
         console.log('Push notifications only work on physical devices');
@@ -64,12 +81,16 @@ export class NotificationService {
    * Setup notification listeners
    */
   static setupNotificationListeners(
-    onNotificationReceived?: (notification: Notifications.Notification) => void,
-    onNotificationTapped?: (response: Notifications.NotificationResponse) => void
+    onNotificationReceived?: (notification: any) => void,
+    onNotificationTapped?: (response: any) => void
   ) {
+    if (!Notifications) {
+      console.warn('Notifications not available in Expo Go');
+      return;
+    }
     // Listener for notifications received while app is in foreground
     this.notificationListener = Notifications.addNotificationReceivedListener(
-      (notification) => {
+      (notification: any) => {
         console.log('📬 Notification received:', notification);
         onNotificationReceived?.(notification);
       }
@@ -77,7 +98,7 @@ export class NotificationService {
 
     // Listener for when user taps on notification
     this.responseListener = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
+      (response: any) => {
         console.log('👆 Notification tapped:', response);
         onNotificationTapped?.(response);
       }
@@ -107,6 +128,10 @@ export class NotificationService {
     data?: any,
     triggerSeconds: number = 5
   ) {
+    if (!Notifications) {
+      console.warn('Notifications not available in Expo Go');
+      return;
+    }
     await Notifications.scheduleNotificationAsync({
       content: {
         title,
@@ -122,6 +147,7 @@ export class NotificationService {
    * Get badge count
    */
   static async getBadgeCount(): Promise<number> {
+    if (!Notifications) return 0;
     return await Notifications.getBadgeCountAsync();
   }
 
@@ -129,6 +155,7 @@ export class NotificationService {
    * Set badge count
    */
   static async setBadgeCount(count: number) {
+    if (!Notifications) return;
     await Notifications.setBadgeCountAsync(count);
   }
 
@@ -136,6 +163,7 @@ export class NotificationService {
    * Clear all notifications
    */
   static async clearAllNotifications() {
+    if (!Notifications) return;
     await Notifications.dismissAllNotificationsAsync();
   }
 }
