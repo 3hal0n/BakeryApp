@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/Button';
@@ -20,8 +20,10 @@ export default function ProfileScreen() {
   const loadUnreadCount = async () => {
     try {
       const notifications = await api.getNotifications();
-      const unread = notifications.filter((n: any) => !n.read).length;
-      setUnreadCount(unread);
+      if (Array.isArray(notifications)) {
+        const unread = notifications.filter((n: any) => !n.read).length;
+        setUnreadCount(unread);
+      }
     } catch (error) {
       console.error('Failed to load notification count:', error);
     }
@@ -64,7 +66,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <TouchableOpacity style={styles.menuCard} onPress={handleNotificationsPress}>
           <View style={styles.menuIcon}>
             <Text style={styles.iconText}>🔔</Text>
@@ -94,6 +96,17 @@ export default function ProfileScreen() {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/settings' as any)}>
+          <View style={styles.menuIcon}>
+            <Text style={styles.iconText}>⚙️</Text>
+          </View>
+          <View style={styles.menuContent}>
+            <Text style={styles.menuTitle}>Settings</Text>
+            <Text style={styles.menuSubtitle}>Notifications, quiet hours & preferences</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
         <View style={styles.infoCard}>
           <Text style={styles.cardTitle}>Account Information</Text>
           <View style={styles.infoRow}>
@@ -116,7 +129,7 @@ export default function ProfileScreen() {
           variant="danger"
           style={styles.logoutButton}
         />
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -163,7 +176,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
     padding: 20,
+    paddingBottom: 40,
   },
   infoCard: {
     backgroundColor: '#FFF',
@@ -199,7 +215,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   logoutButton: {
-    marginTop: 'auto',
+    marginTop: 16,
   },
   menuCard: {
     flexDirection: 'row',

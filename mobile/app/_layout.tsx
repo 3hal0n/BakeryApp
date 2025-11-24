@@ -5,6 +5,8 @@ import 'react-native-reanimated';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { NotificationService } from '../services/notifications';
 import * as Notifications from 'expo-notifications';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { queryClient, persister } from '../services/queryClient';
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
@@ -15,7 +17,7 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
-    const isModalOrDetailScreen = ['new-order', 'add-order', 'edit-order', 'order-detail', 'today-orders', 'notifications', 'dashboard'].includes(segments[0] as string);
+    const isModalOrDetailScreen = ['new-order', 'add-order', 'edit-order', 'order-detail', 'today-orders', 'notifications', 'dashboard', 'calendar', 'settings'].includes(segments[0] as string);
 
     if (!user && inAuthGroup) {
       // Redirect to login if not authenticated
@@ -112,6 +114,18 @@ function RootLayoutNav() {
             headerShown: false,
           }} 
         />
+        <Stack.Screen 
+          name="calendar" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
+        <Stack.Screen 
+          name="settings" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
       </Stack>
       <StatusBar style="auto" />
     </>
@@ -120,8 +134,13 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <PersistQueryClientProvider 
+      client={queryClient} 
+      persistOptions={{ persister }}
+    >
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
+    </PersistQueryClientProvider>
   );
 }

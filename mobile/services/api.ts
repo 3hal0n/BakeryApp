@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.9:5000/api'; // Change to your backend URL
+const API_URL = 'http://192.168.1.8:5000/api'; // Change to your backend URL
 
 export interface LoginRequest {
   email: string;
@@ -61,6 +61,15 @@ export interface CreateOrderRequest {
   notes?: string;
 }
 
+export interface OrderFilters {
+  id?: string;
+  date?: string;
+  from?: string;
+  to?: string;
+  status?: string[];
+  payment?: string[];
+}
+
 class ApiClient {
   private baseUrl = API_URL;
 
@@ -93,6 +102,12 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Network error' }));
+      
+      // If token is invalid or expired, clear stored credentials
+      if (response.status === 401 || error.error === 'Invalid Token' || error.error === 'jwt expired') {
+        await this.clearToken();
+      }
+      
       throw new Error(error.error || `HTTP ${response.status}`);
     }
 
@@ -132,13 +147,7 @@ class ApiClient {
   }
 
   // Orders
-  async getOrders(filters?: {
-    date?: string;
-    from?: string;
-    to?: string;
-    status?: string[];
-    payment?: string[];
-  }): Promise<Order[]> {
+  async getOrders(filters?: OrderFilters): Promise<Order[]> {
     const params = new URLSearchParams();
     if (filters?.date) params.append('date', filters.date);
     if (filters?.from) params.append('from', filters.from);
@@ -187,14 +196,15 @@ class ApiClient {
 
   // Notifications
   async registerPushToken(pushToken: string): Promise<void> {
-    await this.request('/notifications/register-token', {
+    await this.request('/notifications/register-push-token', {
       method: 'POST',
       body: JSON.stringify({ pushToken }),
     });
   }
 
   async getNotifications(): Promise<any[]> {
-    return this.request('/notifications');
+    const response = await this.request<any>('/notifications');
+    return response.notifications || [];
   }
 
   async markNotificationAsRead(notificationId: string): Promise<void> {
@@ -205,7 +215,13 @@ class ApiClient {
 
   async markAllNotificationsAsRead(): Promise<void> {
     await this.request('/notifications/mark-all-read', {
-      method: 'PATCH',
+      method: 'POST',
+    });
+  }
+
+  async sendTestNotification(): Promise<any> {
+    return this.request('/notifications/test', {
+      method: 'POST',
     });
   }
 

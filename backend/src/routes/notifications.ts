@@ -182,4 +182,64 @@ router.post('/unregister-push-token', authenticate, async (req, res) => {
   }
 });
 
+// Test endpoint - send immediate test notification
+router.post('/test', authenticate, async (req, res) => {
+  try {
+    const userId = req.user!.userId;
+
+    // Create test notification in database
+    const notification = await prisma.userNotification.create({
+      data: {
+        userId,
+        title: '🧁 Test Notification',
+        message: 'This is a test notification from BakeryApp! If you see this, notifications are working correctly.',
+        type: 'TEST',
+        isRead: false,
+      },
+    });
+
+    // Get user's push token
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { pushToken: true, name: true },
+    });
+
+    if (!user?.pushToken) {
+      return res.json({ 
+        message: 'Test notification created in database, but no push token found. Enable push notifications in the app.',
+        notification 
+      });
+    }
+
+    // Queue immediate push notification (if notificationQueue is available)
+    try {
+      const { notificationQueue } = require('../queues/notificationQueue');
+      await notificationQueue.add('send-push', {
+        userId,
+        title: notification.title,
+        message: notification.message,
+        data: {
+          notificationId: notification.id,
+          type: 'TEST',
+        },
+      });
+      
+      res.json({ 
+        message: 'Test notification created and queued for push delivery',
+        notification,
+        pushToken: user.pushToken.substring(0, 20) + '...'
+      });
+    } catch (queueError) {
+      console.error('Failed to queue push notification:', queueError);
+      res.json({ 
+        message: 'Test notification created in database, but failed to queue push notification',
+        notification 
+      });
+    }
+  } catch (error) {
+    console.error('Failed to send test notification:', error);
+    res.status(500).json({ message: 'Failed to send test notification' });
+  }
+});
+
 export default router;

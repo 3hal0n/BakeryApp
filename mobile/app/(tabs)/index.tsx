@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Alert } from 'react-native';
+import { useRouter, Href } from 'expo-router';
 import { api, Order } from '../../services/api';
 import { OrderCard } from '../../components/OrderCard';
 import { Button } from '../../components/Button';
@@ -58,6 +58,33 @@ export default function DashboardScreen() {
     loadOrders();
   };
 
+  const handleEdit = (orderId: string) => {
+    router.push(`/edit-order?id=${orderId}` as Href);
+  };
+
+  const handleDelete = async (order: Order) => {
+    Alert.alert(
+      'Delete Order',
+      `Are you sure you want to delete order #${order.orderNo}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteOrder(order.id);
+              Alert.alert('Success', 'Order deleted successfully');
+              loadOrders();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete order');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const pendingCount = orders.filter(o => o.status === 'PENDING').length;
   const readyCount = orders.filter(o => o.status === 'READY').length;
   const totalAmount = orders.reduce((sum, o) => sum + parseFloat(String(o.totalAmount)), 0);
@@ -65,12 +92,22 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Image 
-          source={require('../../assets/images/logo.png')} 
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text style={styles.headerTitle}>Order Dashboard</Text>
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <Image 
+              source={require('../../assets/images/logo.png')} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.headerTitle}>Order Dashboard</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.calendarButton}
+            onPress={() => router.push('/calendar' as Href)}
+          >
+            <Text style={styles.calendarIcon}>📅</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.statsContainer}>
@@ -131,7 +168,14 @@ export default function DashboardScreen() {
           </View>
         ) : (
           orders.map((order) => (
-            <OrderCard key={order.id} order={order} />
+            <OrderCard 
+              key={order.id} 
+              order={order}
+              onPress={() => router.push(`/order-detail?id=${order.id}` as Href)}
+              onEdit={() => handleEdit(order.id)}
+              onDelete={() => handleDelete(order)}
+              showActions={true}
+            />
           ))
         )}
       </ScrollView>
@@ -156,6 +200,13 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: 20,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -168,6 +219,19 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#92400E',
+  },
+  calendarButton: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  calendarIcon: {
+    fontSize: 24,
   },
   statsContainer: {
     flexDirection: 'row',
