@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/Button';
@@ -64,7 +64,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <TouchableOpacity style={styles.menuCard} onPress={handleNotificationsPress}>
           <View style={styles.menuIcon}>
             <Text style={styles.iconText}>🔔</Text>
@@ -127,7 +127,7 @@ export default function ProfileScreen() {
           variant="danger"
           style={styles.logoutButton}
         />
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -174,7 +174,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
     padding: 20,
+    paddingBottom: 40,
   },
   infoCard: {
     backgroundColor: '#FFF',
@@ -210,7 +213,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   logoutButton: {
-    marginTop: 'auto',
+    marginTop: 16,
   },
   menuCard: {
     flexDirection: 'row',
