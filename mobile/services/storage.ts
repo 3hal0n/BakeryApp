@@ -84,8 +84,6 @@ export const isUsingMMKV = usingMMKV;
 
 // Settings keys
 export const SETTINGS_KEYS = {
-  QUIET_HOURS_START: 'quiet_hours_start',
-  QUIET_HOURS_END: 'quiet_hours_end',
   REMINDER_POLICY: 'reminder_policy',
   NOTIFICATIONS_ENABLED: 'notifications_enabled',
   SOUND_ENABLED: 'sound_enabled',
@@ -93,8 +91,6 @@ export const SETTINGS_KEYS = {
 };
 
 export interface AppSettings {
-  quietHoursStart: string; // Format: "HH:mm"
-  quietHoursEnd: string;   // Format: "HH:mm"
   reminderPolicy: '24h' | '12h' | 'both' | 'none';
   notificationsEnabled: boolean;
   soundEnabled: boolean;
@@ -102,8 +98,6 @@ export interface AppSettings {
 }
 
 export const defaultSettings: AppSettings = {
-  quietHoursStart: '22:00',
-  quietHoursEnd: '08:00',
   reminderPolicy: 'both',
   notificationsEnabled: true,
   soundEnabled: true,

@@ -196,14 +196,15 @@ class ApiClient {
 
   // Notifications
   async registerPushToken(pushToken: string): Promise<void> {
-    await this.request('/notifications/register-token', {
+    await this.request('/notifications/register-push-token', {
       method: 'POST',
       body: JSON.stringify({ pushToken }),
     });
   }
 
   async getNotifications(): Promise<any[]> {
-    return this.request('/notifications');
+    const response = await this.request<any>('/notifications');
+    return response.notifications || [];
   }
 
   async markNotificationAsRead(notificationId: string): Promise<void> {
@@ -214,7 +215,13 @@ class ApiClient {
 
   async markAllNotificationsAsRead(): Promise<void> {
     await this.request('/notifications/mark-all-read', {
-      method: 'PATCH',
+      method: 'POST',
+    });
+  }
+
+  async sendTestNotification(): Promise<any> {
+    return this.request('/notifications/test', {
+      method: 'POST',
     });
   }
 

@@ -20,8 +20,10 @@ export default function ProfileScreen() {
   const loadUnreadCount = async () => {
     try {
       const notifications = await api.getNotifications();
-      const unread = notifications.filter((n: any) => !n.read).length;
-      setUnreadCount(unread);
+      if (Array.isArray(notifications)) {
+        const unread = notifications.filter((n: any) => !n.read).length;
+        setUnreadCount(unread);
+      }
     } catch (error) {
       console.error('Failed to load notification count:', error);
     }

@@ -7,17 +7,14 @@ import {
   Switch,
   TouchableOpacity,
   Alert,
-  Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { getSettings, saveSettings, AppSettings, clearAllStorage } from '../services/storage';
+import { api } from '../services/api';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -41,18 +38,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleTimeChange = async (type: 'start' | 'end', time: Date) => {
-    const timeStr = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
-    
-    if (type === 'start') {
-      setShowStartTimePicker(false);
-      await handleSaveSetting('quietHoursStart', timeStr);
-    } else {
-      setShowEndTimePicker(false);
-      await handleSaveSetting('quietHoursEnd', timeStr);
-    }
-  };
-
   const handleClearCache = () => {
     Alert.alert(
       'Clear Cache',
@@ -71,11 +56,22 @@ export default function SettingsScreen() {
     );
   };
 
-  const parseTime = (timeStr: string): Date => {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
-    return date;
+  const handleTestNotification = async () => {
+    try {
+      Alert.alert('Sending...', 'Sending test notification...');
+      const result = await api.sendTestNotification();
+      Alert.alert(
+        '✅ Test Notification Sent',
+        result.message || 'Check your notifications!',
+        [{ text: 'OK' }]
+      );
+    } catch (error: any) {
+      Alert.alert(
+        '❌ Error',
+        error.message || 'Failed to send test notification. Make sure you are logged in and push notifications are enabled.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   if (!settings) {
@@ -165,64 +161,22 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        {/* Quiet Hours Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quiet Hours</Text>
-          <Text style={styles.sectionDescription}>No notifications during these hours</Text>
-          
-          <View style={styles.timeRow}>
-            <Text style={styles.timeLabel}>Start Time:</Text>
-            <TouchableOpacity
-              style={styles.timeButton}
-              onPress={() => setShowStartTimePicker(true)}
-            >
-              <Text style={styles.timeText}>{settings.quietHoursStart}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.timeRow}>
-            <Text style={styles.timeLabel}>End Time:</Text>
-            <TouchableOpacity
-              style={styles.timeButton}
-              onPress={() => setShowEndTimePicker(true)}
-            >
-              <Text style={styles.timeText}>{settings.quietHoursEnd}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {showStartTimePicker && (
-            <DateTimePicker
-              value={parseTime(settings.quietHoursStart)}
-              mode="time"
-              is24Hour={true}
-              display="default"
-              onChange={(event, date) => {
-                if (date) handleTimeChange('start', date);
-                if (Platform.OS === 'android') setShowStartTimePicker(false);
-              }}
-            />
-          )}
-
-          {showEndTimePicker && (
-            <DateTimePicker
-              value={parseTime(settings.quietHoursEnd)}
-              mode="time"
-              is24Hour={true}
-              display="default"
-              onChange={(event, date) => {
-                if (date) handleTimeChange('end', date);
-                if (Platform.OS === 'android') setShowEndTimePicker(false);
-              }}
-            />
-          )}
-        </View>
-
         {/* Data Management Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Management</Text>
           
           <TouchableOpacity style={styles.dangerButton} onPress={handleClearCache}>
             <Text style={styles.dangerButtonText}>🗑️ Clear Cache & Offline Data</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Testing Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Testing</Text>
+          <Text style={styles.sectionDescription}>Test notification functionality</Text>
+          
+          <TouchableOpacity style={styles.testButton} onPress={handleTestNotification}>
+            <Text style={styles.testButtonText}>📱 Send Test Notification</Text>
           </TouchableOpacity>
         </View>
 
@@ -371,6 +325,20 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     color: '#DC2626',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  testButton: {
+    backgroundColor: '#E3F2FD',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2196F3',
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: '#1976D2',
     fontSize: 16,
     fontWeight: '600',
   },
