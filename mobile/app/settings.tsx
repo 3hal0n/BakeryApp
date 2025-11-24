@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { getSettings, saveSettings, AppSettings, clearAllStorage } from '../services/storage';
 import { api } from '../services/api';
+import { NotificationService } from '../services/notifications';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -62,13 +63,35 @@ export default function SettingsScreen() {
       const result = await api.sendTestNotification();
       Alert.alert(
         '✅ Test Notification Sent',
-        result.message || 'Check your notifications!',
+        result.message || 'Check your notifications tab! Note: Push notifications (notification center) require a development build, not Expo Go.',
         [{ text: 'OK' }]
       );
     } catch (error: any) {
       Alert.alert(
         '❌ Error',
         error.message || 'Failed to send test notification. Make sure you are logged in and push notifications are enabled.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleLocalNotificationTest = async () => {
+    try {
+      await NotificationService.scheduleLocalNotification(
+        '🧁 BakeryApp Test',
+        'This is a local notification test. It should appear in your notification center in 5 seconds!',
+        { type: 'TEST' },
+        5
+      );
+      Alert.alert(
+        '⏰ Scheduled',
+        'Local notification scheduled for 5 seconds from now. This will appear in the notification center if you are using a development build (not Expo Go).',
+        [{ text: 'OK' }]
+      );
+    } catch (error: any) {
+      Alert.alert(
+        '❌ Error',
+        'Local notifications require a development build. You are currently using Expo Go which does not support native notifications.',
         [{ text: 'OK' }]
       );
     }
@@ -176,7 +199,11 @@ export default function SettingsScreen() {
           <Text style={styles.sectionDescription}>Test notification functionality</Text>
           
           <TouchableOpacity style={styles.testButton} onPress={handleTestNotification}>
-            <Text style={styles.testButtonText}>📱 Send Test Notification</Text>
+            <Text style={styles.testButtonText}>📱 Send Test Notification (Database)</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={[styles.testButton, { marginTop: 12 }]} onPress={handleLocalNotificationTest}>
+            <Text style={styles.testButtonText}>🔔 Test Local Notification (Dev Build Only)</Text>
           </TouchableOpacity>
         </View>
 
