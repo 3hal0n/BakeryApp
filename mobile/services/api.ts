@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://172.22.160.1:5000/api'; // Change to your backend URL
+const API_URL = 'http://192.168.1.8:5000/api'; // Change to your backend URL
 
 export interface LoginRequest {
   email: string;
@@ -102,6 +102,12 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Network error' }));
+      
+      // If token is invalid or expired, clear stored credentials
+      if (response.status === 401 || error.error === 'Invalid Token' || error.error === 'jwt expired') {
+        await this.clearToken();
+      }
+      
       throw new Error(error.error || `HTTP ${response.status}`);
     }
 
