@@ -308,6 +308,11 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backText}>← Back</Text>
+        </TouchableOpacity>
+        
+
         <Text style={styles.headerTitle}>Manager Dashboard</Text>
       </View>
 
@@ -380,6 +385,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 16,
+    top: 60,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  backText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   tabs: {
     flexDirection: 'row',
