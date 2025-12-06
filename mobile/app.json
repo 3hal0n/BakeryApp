@@ -44,7 +44,9 @@
         {
           "icon": "./assets/images/icon.png",
           "color": "#4CAF50",
-          "sounds": ["./assets/sounds/notification.wav"],
+          "sounds": [
+            "./assets/sounds/notification.wav"
+          ],
           "mode": "production"
         }
       ]
@@ -52,6 +54,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8cfbed5e-885e-4253-bbc7-45048d7b7006"
+      }
     }
   }
 }

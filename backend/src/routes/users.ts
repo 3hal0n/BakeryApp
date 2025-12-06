@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { UserService } from '../services/userService';
 import { createUserSchema } from '../schemas/user';
-import { requireRoles, authenticate } from '../lib/auth';
+import { requireRoles } from '../lib/auth';
 import { prisma } from '../lib/prisma';
 import argon2 from 'argon2';
 
@@ -18,7 +18,7 @@ const updateUserSchema = z.object({
 });
 
 // GET /api/users - Get all users (Admin only)
-router.get('/', authenticate, requireRoles('ADMIN'), async (req, res) => {
+router.get('/', requireRoles('ADMIN'), async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       select: {
@@ -41,7 +41,7 @@ router.get('/', authenticate, requireRoles('ADMIN'), async (req, res) => {
 });
 
 // GET /api/users/me (Any logged-in user)
-router.get('/me', authenticate, async (req, res) => {
+router.get('/me', async (req, res) => {
   try {
     const user = await UserService.getMe(req.user!.userId);
     if (!user) {
@@ -54,7 +54,7 @@ router.get('/me', authenticate, async (req, res) => {
 });
 
 // POST /api/users (Admin only)
-router.post('/', authenticate, requireRoles('ADMIN'), async (req, res) => {
+router.post('/', requireRoles('ADMIN'), async (req, res) => {
   try {
     const data = createUserSchema.parse(req.body);
     const user = await UserService.createUser(data);
@@ -71,7 +71,7 @@ router.post('/', authenticate, requireRoles('ADMIN'), async (req, res) => {
 });
 
 // PATCH /api/users/:id - Update user (Admin only)
-router.patch('/:id', authenticate, requireRoles('ADMIN'), async (req, res) => {
+router.patch('/:id', requireRoles('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const data = updateUserSchema.parse(req.body);
@@ -116,7 +116,7 @@ router.patch('/:id', authenticate, requireRoles('ADMIN'), async (req, res) => {
 });
 
 // DELETE /api/users/:id - Delete user (Admin only)
-router.delete('/:id', authenticate, requireRoles('ADMIN'), async (req, res) => {
+router.delete('/:id', requireRoles('ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const currentUserId = req.user!.userId;
