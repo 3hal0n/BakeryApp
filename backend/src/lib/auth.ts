@@ -73,3 +73,6 @@ export const requireRoles = (...roles: string[]) => {
     next();
   };
 };
+
+// Alias for single role check
+export const requireRole = (roles: string[]) => requireRoles(...roles);
