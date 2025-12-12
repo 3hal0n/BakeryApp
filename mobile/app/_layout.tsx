@@ -17,7 +17,7 @@ function RootLayoutNav() {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(tabs)';
-    const isModalOrDetailScreen = ['new-order', 'add-order', 'edit-order', 'order-detail', 'today-orders', 'notifications', 'dashboard', 'calendar', 'settings'].includes(segments[0] as string);
+    const isModalOrDetailScreen = ['new-order', 'add-order', 'edit-order', 'order-detail', 'today-orders', 'notifications', 'dashboard', 'calendar', 'settings', 'admin-users'].includes(segments[0] as string);
 
     if (!user && inAuthGroup) {
       // Redirect to login if not authenticated
@@ -122,6 +122,12 @@ function RootLayoutNav() {
         />
         <Stack.Screen 
           name="settings" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
+        <Stack.Screen 
+          name="admin-users" 
           options={{ 
             headerShown: false,
           }} 

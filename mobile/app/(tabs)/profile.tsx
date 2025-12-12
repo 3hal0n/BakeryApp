@@ -30,7 +30,7 @@ export default function ProfileScreen() {
   };
 
   const handleNotificationsPress = () => {
-    router.push('/notifications' as any);
+    router.push('/notifications');
   };
 
   const handleLogout = () => {
@@ -86,7 +86,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         {(user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
-          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/dashboard' as any)}>
+          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/dashboard')}>
             <View style={styles.menuIcon}>
               <Text style={styles.iconText}>📊</Text>
             </View>
@@ -99,7 +99,7 @@ export default function ProfileScreen() {
         )}
 
         {user?.role === 'ADMIN' && (
-          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/admin-users' as any)}>
+          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/admin-users')}>
             <View style={styles.menuIcon}>
               <Text style={styles.iconText}>👥</Text>
             </View>
@@ -111,7 +111,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/settings' as any)}>
+        <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/settings')}>
           <View style={styles.menuIcon}>
             <Text style={styles.iconText}>⚙️</Text>
           </View>
