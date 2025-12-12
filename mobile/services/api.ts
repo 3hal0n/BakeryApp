@@ -204,7 +204,12 @@ class ApiClient {
 
   async getNotifications(): Promise<any[]> {
     const response = await this.request<any>('/notifications');
-    return response.notifications || [];
+    const notifications = response.notifications || [];
+    // Map isRead to read for frontend compatibility
+    return notifications.map((n: any) => ({
+      ...n,
+      read: n.isRead,
+    }));
   }
 
   async markNotificationAsRead(notificationId: string): Promise<void> {
@@ -249,6 +254,46 @@ class ApiClient {
 
   async getPendingOrders(): Promise<any> {
     return this.request('/reports/pending-orders');
+  }
+
+  // User Management (Admin only)
+  async getUsers(): Promise<any[]> {
+    return this.request('/users');
+  }
+
+  async createUser(data: {
+    name: string;
+    email: string;
+    phone?: string;
+    password: string;
+    role: 'ADMIN' | 'MANAGER' | 'CASHIER';
+  }): Promise<any> {
+    return this.request('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateUser(
+    userId: string,
+    data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      role?: 'ADMIN' | 'MANAGER' | 'CASHIER';
+      isActive?: boolean;
+    }
+  ): Promise<any> {
+    return this.request(`/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await this.request(`/users/${userId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

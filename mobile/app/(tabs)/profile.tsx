@@ -30,7 +30,7 @@ export default function ProfileScreen() {
   };
 
   const handleNotificationsPress = () => {
-    router.push('/notifications' as any);
+    router.push('/notifications');
   };
 
   const handleLogout = () => {
@@ -85,18 +85,33 @@ export default function ProfileScreen() {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/dashboard' as any)}>
-          <View style={styles.menuIcon}>
-            <Text style={styles.iconText}>📊</Text>
-          </View>
-          <View style={styles.menuContent}>
-            <Text style={styles.menuTitle}>Manager Dashboard</Text>
-            <Text style={styles.menuSubtitle}>View reports, stats & analytics</Text>
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
+        {(user?.role === 'MANAGER' || user?.role === 'ADMIN') && (
+          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/dashboard')}>
+            <View style={styles.menuIcon}>
+              <Text style={styles.iconText}>📊</Text>
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Manager Dashboard</Text>
+              <Text style={styles.menuSubtitle}>View reports, stats & analytics</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        )}
 
-        <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/settings' as any)}>
+        {user?.role === 'ADMIN' && (
+          <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/admin-users')}>
+            <View style={styles.menuIcon}>
+              <Text style={styles.iconText}>👥</Text>
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Manage Users</Text>
+              <Text style={styles.menuSubtitle}>Add, edit, or remove staff accounts</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity style={styles.menuCard} onPress={() => router.push('/settings')}>
           <View style={styles.menuIcon}>
             <Text style={styles.iconText}>⚙️</Text>
           </View>

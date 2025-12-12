@@ -307,14 +307,17 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Text style={styles.backText}>←</Text>
+            </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Manager Dashboard</Text>
-      </View>
+            <Text style={styles.headerTitle}>Manager Dashboard</Text>
+
+            <View style={styles.headerRightPlaceholder} />
+          </View>
+        </View>
 
       {/* Tabs */}
       <View style={styles.tabs}>
@@ -386,17 +389,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 36,
+    paddingBottom: 8,
+  },
   backButton: {
-    position: 'absolute',
-    left: 16,
-    top: 60,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    width: 48,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    paddingLeft: 4,
   },
   backText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
+  },
+  headerRightPlaceholder: {
+    width: 48,
+    height: 36,
   },
   tabs: {
     flexDirection: 'row',
