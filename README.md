@@ -65,6 +65,28 @@ npm install
 
 - The mobile app expects the backend API URL to be reachable from the device. Edit the appropriate config or env file in `mobile/` to point to your machine (e.g., `http://192.168.1.8:5000/api`). Use your PC's LAN IP for physical devices.
 
+	- File to update: if your project uses a hard-coded API constant, it is commonly located at `mobile/services/api.ts` (or similar). Update the `API_URL` (or equivalent) string to use your machine's LAN IP so a phone on the same Wi‑Fi can reach the backend.
+
+	- How to find your Windows LAN IP (PowerShell):
+
+```powershell
+ipconfig | Select-String "IPv4" -Context 0,0
+```
+
+	- Example change in `mobile/services/api.ts`:
+
+```ts
+// before
+export const API_URL = "http://localhost:5000/api";
+
+// after (replace 192.168.1.8 with your PC's IPv4 address)
+export const API_URL = "http://192.168.1.8:5000/api";
+```
+
+	- Alternatively, store the URL in an env file or Expo config (recommended). For example, in an env file or `app.config.js` set `EXPO_PUBLIC_API_URL` and use it in code so you don't commit local IPs.
+
+	- Troubleshooting: ensure your firewall allows incoming connections on the backend port (e.g., 5000) and both devices are on the same network.
+
 3. Start Expo (development)
 
 ```powershell
