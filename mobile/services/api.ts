@@ -1,6 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-const API_URL = 'http://192.168.1.8:5000/api'; // Change to your backend URL
+// Deploy URL (Render)
+const RENDER_URL = 'https://bakeryapp-backend-l87q.onrender.com';
+
+// Prefer value from Expo config `extra.API_URL`, then a DEBUG env override, then the Render URL.
+const rawApiUrl = (Constants.expoConfig?.extra as any)?.API_URL || process.env.DEBUG_API_URL || RENDER_URL;
+// Ensure base has `/api` suffix
+const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/$/, '')}/api`;
 
 export interface LoginRequest {
   email: string;
