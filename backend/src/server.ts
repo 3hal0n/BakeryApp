@@ -62,12 +62,9 @@ const server = app.listen(PORT, () => {
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, closing server...');
   server.close(async () => {
-    const { notificationQueue, notificationWorker } = await import('./queues/notificationQueue');
-    const { redisConnection } = await import('./config/redis');
+    const { stopNotificationWorker } = await import('./queues/notificationQueue');
     
-    await notificationWorker.close();
-    await notificationQueue.close();
-    await redisConnection.quit();
+    await stopNotificationWorker();
     await prisma.$disconnect();
     
     console.log('Server closed');
@@ -78,12 +75,9 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('SIGINT received, closing server...');
   server.close(async () => {
-    const { notificationQueue, notificationWorker } = await import('./queues/notificationQueue');
-    const { redisConnection } = await import('./config/redis');
+    const { stopNotificationWorker } = await import('./queues/notificationQueue');
     
-    await notificationWorker.close();
-    await notificationQueue.close();
-    await redisConnection.quit();
+    await stopNotificationWorker();
     await prisma.$disconnect();
     
     console.log('Server closed');

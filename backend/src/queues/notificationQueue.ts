@@ -1,248 +1,349 @@
-import { Queue, Worker, Job } from 'bullmq';
-import { redisConnection } from '../config/redis';
 import { prisma } from '../lib/prisma';
 import { sendPushNotification } from '../services/pushNotificationService';
+import { NotificationKind, NotificationStatus } from '@prisma/client';
 
-export interface NotificationJobData {
-  orderId: string;
-  customerId: string;
-  type: 'reminder-24h' | 'reminder-12h' | 'same-day' | 'overdue';
-  message: string;
-}
+// DB-backed notification worker using Prisma/Postgres
+let workerInterval: NodeJS.Timeout | null = null;
+let isProcessing = false;
 
-// Create notification queue
-export const notificationQueue = new Queue<NotificationJobData>('notifications', {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-    removeOnComplete: {
-      age: 24 * 3600, // Keep completed jobs for 24 hours
-      count: 1000,
-    },
-    removeOnFail: {
-      age: 7 * 24 * 3600, // Keep failed jobs for 7 days
-    },
-  },
-});
+/**
+ * Process a batch of due notifications from the database
+ * Uses Postgres row-level locking to prevent duplicate processing
+ */
+async function processDueNotifications(): Promise<void> {
+  if (isProcessing) {
+    return; // Skip if already processing
+  }
 
-// Worker to process notification jobs
-export const notificationWorker = new Worker<NotificationJobData>(
-  'notifications',
-  async (job: Job<NotificationJobData>) => {
-    const { orderId, customerId, type, message } = job.data;
+  isProcessing = true;
 
-    try {
-      console.log(`Processing ${type} notification for order ${orderId}`);
+  try {
+    // Claim up to 20 scheduled notifications that are due
+    // Using raw SQL with FOR UPDATE SKIP LOCKED for atomic claiming
+    const claimedNotifications: any[] = await prisma.$queryRaw`
+      WITH claimed AS (
+        SELECT id
+        FROM notifications
+        WHERE status = 'SCHEDULED'
+          AND scheduled_for <= NOW()
+        ORDER BY scheduled_for
+        LIMIT 20
+        FOR UPDATE SKIP LOCKED
+      )
+      UPDATE notifications
+      SET status = 'SCHEDULED'::notification_status,
+          attempt_count = attempt_count + 1
+      FROM claimed
+      WHERE notifications.id = claimed.id
+      RETURNING 
+        notifications.id,
+        notifications.order_id,
+        notifications.target_user_id,
+        notifications.kind,
+        notifications.scheduled_for,
+        notifications.attempt_count
+    `;
 
-      // Get customer and order details
-      const customer = await prisma.user.findUnique({
-        where: { id: customerId },
-        select: { id: true, name: true, pushToken: true },
-      });
+    if (claimedNotifications.length === 0) {
+      return; // No due notifications
+    }
 
-      const order = await prisma.order.findUnique({
-        where: { id: orderId },
-        select: {
-          id: true,
-          orderNo: true,
-          status: true,
-          pickupAt: true,
-          totalAmount: true,
-        },
-      });
+    console.log(`📬 Processing ${claimedNotifications.length} due notifications`);
 
-      if (!customer) {
-        throw new Error(`Customer ${customerId} not found`);
-      }
+    // Process each claimed notification
+    for (const notification of claimedNotifications) {
+      try {
+        await processNotification(notification);
+      } catch (error) {
+        console.error(`Failed to process notification ${notification.id}:`, error);
+        
+        // Update notification status based on attempt count
+        const maxAttempts = 3;
+        const newStatus = notification.attempt_count >= maxAttempts 
+          ? NotificationStatus.FAILED 
+          : NotificationStatus.SCHEDULED;
 
-      if (!order) {
-        throw new Error(`Order ${orderId} not found`);
-      }
-
-      // Skip if order is already completed or cancelled
-      if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
-        console.log(`Skipping notification for ${order.status} order ${orderId}`);
-        return { skipped: true, reason: `Order is ${order.status}` };
-      }
-
-      // Create notification record in database
-      await prisma.userNotification.create({
-        data: {
-          userId: customerId,
-          orderId,
-          type,
-          title: getNotificationTitle(type),
-          message,
-          isRead: false,
-        },
-      });
-
-      // Send push notification if customer has a push token
-      if (customer.pushToken) {
-        await sendPushNotification({
-          to: customer.pushToken,
-          title: getNotificationTitle(type),
-          body: message,
+        await prisma.notification.update({
+          where: { id: notification.id },
           data: {
-            orderId,
-            orderNumber: order.orderNo,
-            type,
+            status: newStatus,
+            error: String(error),
           },
         });
       }
-
-      console.log(`✅ ${type} notification sent for order ${orderId}`);
-      return { success: true, orderId, type };
-    } catch (error) {
-      console.error(`Failed to process notification job:`, error);
-      throw error; // Will trigger retry
     }
-  },
-  {
-    connection: redisConnection,
-    concurrency: 5, // Process up to 5 notifications simultaneously
-  }
-);
-
-// Helper function to get notification titles
-function getNotificationTitle(type: NotificationJobData['type']): string {
-  switch (type) {
-    case 'reminder-24h':
-      return '📅 Order Pickup Reminder';
-    case 'reminder-12h':
-      return '⏰ Pickup Soon!';
-    case 'same-day':
-      return '🔔 Pickup Today!';
-    case 'overdue':
-      return '⚠️ Overdue Order';
-    default:
-      return 'Order Notification';
+  } catch (error) {
+    console.error('Error processing notification batch:', error);
+  } finally {
+    isProcessing = false;
   }
 }
 
-// Schedule notification for an order
-export async function scheduleOrderNotifications(orderId: string) {
-  try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
+/**
+ * Process a single notification
+ */
+async function processNotification(notification: any): Promise<void> {
+  const { id, order_id, target_user_id, kind } = notification;
+
+  // Get order and user details
+  const [order, user] = await Promise.all([
+    prisma.order.findUnique({
+      where: { id: order_id },
       select: {
         id: true,
         orderNo: true,
-        createdBy: true,
-        pickupAt: true,
         status: true,
+        pickupAt: true,
+        customerName: true,
       },
+    }),
+    prisma.user.findUnique({
+      where: { id: target_user_id },
+      select: {
+        id: true,
+        name: true,
+        deviceTokens: {
+          select: { token: true, platform: true },
+          orderBy: { lastSeenAt: 'desc' },
+          take: 1,
+        },
+      },
+    }),
+  ]);
+
+  if (!order) {
+    throw new Error(`Order ${order_id} not found`);
+  }
+
+  if (!user) {
+    throw new Error(`User ${target_user_id} not found`);
+  }
+
+  // Skip if order is already completed or cancelled
+  if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
+    console.log(`⏭️  Skipping notification for ${order.status} order ${order_id}`);
+    await prisma.notification.update({
+      where: { id },
+      data: { status: NotificationStatus.SKIPPED },
+    });
+    return;
+  }
+
+  // Build notification message
+  const { title, message } = buildNotificationMessage(kind, order);
+
+  // Create user notification record
+  await prisma.userNotification.create({
+    data: {
+      userId: target_user_id,
+      orderId: order_id,
+      type: kind,
+      title,
+      message,
+      isRead: false,
+    },
+  });
+
+  // Send push notification if user has device tokens
+  if (user.deviceTokens.length > 0) {
+    const deviceToken = user.deviceTokens[0];
+    try {
+      await sendPushNotification({
+        to: deviceToken.token,
+        title,
+        body: message,
+        data: {
+          orderId: order_id,
+          orderNumber: order.orderNo,
+          type: kind,
+        },
+      });
+      console.log(`✅ Push notification sent to ${user.name} for order ${order.orderNo}`);
+    } catch (pushError) {
+      console.error(`Failed to send push notification:`, pushError);
+      // Continue - we still created the in-app notification
+    }
+  }
+
+  // Mark notification as sent
+  await prisma.notification.update({
+    where: { id },
+    data: {
+      status: NotificationStatus.SENT,
+      sentAt: new Date(),
+    },
+  });
+
+  console.log(`✅ Notification processed for order ${order.orderNo} (${kind})`);
+}
+
+/**
+ * Build notification title and message based on notification kind
+ */
+function buildNotificationMessage(
+  kind: NotificationKind,
+  order: { orderNo: string; pickupAt: Date; customerName: string }
+): { title: string; message: string } {
+  const pickupTime = new Date(order.pickupAt).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  switch (kind) {
+    case NotificationKind.DAY_BEFORE:
+      return {
+        title: '📅 Order Pickup Reminder',
+        message: `Your order #${order.orderNo} is ready for pickup tomorrow at ${pickupTime}`,
+      };
+    case NotificationKind.SAME_DAY:
+      return {
+        title: '🔔 Pickup Today!',
+        message: `Today is pickup day! Order #${order.orderNo} is ready at ${pickupTime}`,
+      };
+    case NotificationKind.OVERDUE:
+      return {
+        title: '⚠️ Overdue Order',
+        message: `Order #${order.orderNo} was scheduled for pickup and is now overdue`,
+      };
+    default:
+      return {
+        title: 'Order Notification',
+        message: `Notification for order #${order.orderNo}`,
+      };
+  }
+}
+
+/**
+ * Schedule notifications for an order based on pickup time
+ */
+export async function scheduleOrderNotifications(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      orderNo: true,
+      createdBy: true,
+      pickupAt: true,
+      status: true,
+    },
+  });
+
+  if (!order) {
+    throw new Error(`Order ${orderId} not found`);
+  }
+
+  // Skip if order is already completed or cancelled
+  if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
+    console.log(`Skipping notification scheduling for ${order.status} order`);
+    return;
+  }
+
+  const pickupDate = new Date(order.pickupAt);
+  const now = new Date();
+
+  // Calculate notification times
+  const dayBefore = new Date(pickupDate.getTime() - 24 * 60 * 60 * 1000);
+  const sameDay = new Date(pickupDate);
+  sameDay.setHours(9, 0, 0, 0); // 9 AM on pickup day
+
+  const notificationsToCreate: Array<{
+    orderId: string;
+    targetUserId: string;
+    kind: NotificationKind;
+    scheduledFor: Date;
+  }> = [];
+
+  // Schedule day-before reminder
+  if (dayBefore > now) {
+    notificationsToCreate.push({
+      orderId: order.id,
+      targetUserId: order.createdBy,
+      kind: NotificationKind.DAY_BEFORE,
+      scheduledFor: dayBefore,
+    });
+  }
+
+  // Schedule same-day reminder
+  if (sameDay > now && sameDay < pickupDate) {
+    notificationsToCreate.push({
+      orderId: order.id,
+      targetUserId: order.createdBy,
+      kind: NotificationKind.SAME_DAY,
+      scheduledFor: sameDay,
+    });
+  }
+
+  // Create all notifications in a single transaction
+  if (notificationsToCreate.length > 0) {
+    await prisma.notification.createMany({
+      data: notificationsToCreate.map((n) => ({
+        ...n,
+        status: NotificationStatus.SCHEDULED,
+        attemptCount: 0,
+      })),
+      skipDuplicates: true, // Skip if notification already exists
     });
 
-    if (!order) {
-      throw new Error(`Order ${orderId} not found`);
-    }
-
-    const pickupDate = new Date(order.pickupAt);
-    const now = new Date();
-
-    // Calculate notification times
-    const reminder24h = new Date(pickupDate.getTime() - 24 * 60 * 60 * 1000);
-    const reminder12h = new Date(pickupDate.getTime() - 12 * 60 * 60 * 1000);
-    const sameDay = new Date(pickupDate);
-    sameDay.setHours(9, 0, 0, 0); // 9 AM on pickup day
-
-    // Schedule 24-hour reminder
-    if (reminder24h > now) {
-      await notificationQueue.add(
-        'reminder-24h',
-        {
-          orderId: order.id,
-          customerId: order.createdBy,
-          type: 'reminder-24h',
-          message: `Your order #${order.orderNo} is ready for pickup tomorrow at ${pickupDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
-        },
-        {
-          delay: reminder24h.getTime() - now.getTime(),
-          jobId: `${orderId}-reminder-24h`,
-        }
-      );
-      console.log(`Scheduled 24h reminder for order ${orderId} at ${reminder24h}`);
-    }
-
-    // Schedule 12-hour reminder
-    if (reminder12h > now) {
-      await notificationQueue.add(
-        'reminder-12h',
-        {
-          orderId: order.id,
-          customerId: order.createdBy,
-          type: 'reminder-12h',
-          message: `Don't forget! Your order #${order.orderNo} is ready for pickup in 12 hours`,
-        },
-        {
-          delay: reminder12h.getTime() - now.getTime(),
-          jobId: `${orderId}-reminder-12h`,
-        }
-      );
-      console.log(`Scheduled 12h reminder for order ${orderId} at ${reminder12h}`);
-    }
-
-    // Schedule same-day reminder
-    if (sameDay > now && sameDay < pickupDate) {
-      await notificationQueue.add(
-        'same-day',
-        {
-          orderId: order.id,
-          customerId: order.createdBy,
-          type: 'same-day',
-          message: `Today is pickup day! Order #${order.orderNo} is ready at ${pickupDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
-        },
-        {
-          delay: sameDay.getTime() - now.getTime(),
-          jobId: `${orderId}-same-day`,
-        }
-      );
-      console.log(`Scheduled same-day reminder for order ${orderId} at ${sameDay}`);
-    }
-
-    return { success: true, orderId, scheduledCount: 3 };
-  } catch (error) {
-    console.error(`Failed to schedule notifications for order ${orderId}:`, error);
-    throw error;
+    console.log(`📅 Scheduled ${notificationsToCreate.length} notifications for order ${order.orderNo}`);
+  } else {
+    console.log(`⏭️  No future notifications to schedule for order ${order.orderNo}`);
   }
 }
 
-// Cancel all scheduled notifications for an order
-export async function cancelOrderNotifications(orderId: string) {
-  try {
-    const jobIds = [
-      `${orderId}-reminder-24h`,
-      `${orderId}-reminder-12h`,
-      `${orderId}-same-day`,
-    ];
+/**
+ * Cancel all scheduled notifications for an order
+ */
+export async function cancelOrderNotifications(orderId: string): Promise<void> {
+  const result = await prisma.notification.updateMany({
+    where: {
+      orderId,
+      status: NotificationStatus.SCHEDULED,
+    },
+    data: {
+      status: NotificationStatus.SKIPPED,
+    },
+  });
 
-    for (const jobId of jobIds) {
-      const job = await notificationQueue.getJob(jobId);
-      if (job) {
-        await job.remove();
-        console.log(`Removed notification job ${jobId}`);
-      }
-    }
+  console.log(`🚫 Cancelled ${result.count} scheduled notifications for order ${orderId}`);
+}
 
-    return { success: true, orderId, removedCount: jobIds.length };
-  } catch (error) {
-    console.error(`Failed to cancel notifications for order ${orderId}:`, error);
-    throw error;
+/**
+ * Start the notification worker
+ * Processes due notifications every 15 seconds
+ */
+export function startNotificationWorker(): void {
+  if (workerInterval) {
+    console.warn('Notification worker is already running');
+    return;
+  }
+
+  console.log('📬 Starting DB-backed notification worker...');
+  
+  // Process immediately on startup
+  processDueNotifications().catch((err) => {
+    console.error('Initial notification processing failed:', err);
+  });
+
+  // Then process every 15 seconds
+  workerInterval = setInterval(() => {
+    processDueNotifications().catch((err) => {
+      console.error('Scheduled notification processing failed:', err);
+    });
+  }, 15000); // 15 seconds
+
+  console.log('✅ Notification worker started (polling every 15s)');
+}
+
+/**
+ * Stop the notification worker
+ */
+export async function stopNotificationWorker(): Promise<void> {
+  if (workerInterval) {
+    clearInterval(workerInterval);
+    workerInterval = null;
+    console.log('📭 Notification worker stopped');
   }
 }
 
-// Event listeners for monitoring
-notificationWorker.on('completed', (job) => {
-  console.log(`✅ Job ${job.id} completed successfully`);
-});
-
-notificationWorker.on('failed', (job, err) => {
-  console.error(`❌ Job ${job?.id} failed:`, err.message);
-});
-
-console.log('📬 Notification queue and worker initialized');
+// Auto-start the worker when this module is imported
+startNotificationWorker();

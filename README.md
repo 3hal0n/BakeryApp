@@ -1,10 +1,10 @@
 # BakeryApp
 
-Short description: BakeryApp is a full-stack bakery point-of-sale and management application with a TypeScript/Node backend (Express + Prisma + BullMQ) and an Expo React Native mobile client.
+Short description: BakeryApp is a full-stack bakery point-of-sale and management application with a TypeScript/Node backend (Express + Prisma) and an Expo React Native mobile client.
 
 ## Repository layout
 
-- `backend/` — Node + TypeScript backend (Express, Prisma, BullMQ). Listens on port `5000` in local dev.
+- `backend/` — Node + TypeScript backend (Express, Prisma). Listens on port `5000` in local dev.
 - `mobile/` — Expo React Native mobile app (Expo Router, React Query, MMKV fallback to AsyncStorage).
 - `docs/` — project documentation.
 
@@ -16,7 +16,6 @@ Short description: BakeryApp is a full-stack bakery point-of-sale and management
 - npm or pnpm
 - Expo CLI / EAS CLI (for builds) — installed globally or via `npx`
 - PostgreSQL (local or remote) for Prisma `DATABASE_URL`
-- Redis or Upstash (required for BullMQ queues used by notifications)
 
 Windows PowerShell examples are shown below.
 
@@ -34,7 +33,6 @@ npm install
 - `DATABASE_URL` — Postgres connection string
 - `JWT_SECRET` — secret for signing tokens
 - `PORT` — optional (default 5000)
-- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` or other Redis/connection settings used by your config
 
 3. Run Prisma migrations (creates/updates local DB schema) and optional seed
 
@@ -118,7 +116,8 @@ cd mobile; npm install; npx expo start
 ## Deployment notes
 
 - Push-notifications require a proper build (EAS) and push credentials (Apple/Google). See `docs/ProjectPhases.md` Phase: EAS + Push.
-- Configure production database, Redis instance, and secrets before deploying.
+- Configure production database and secrets before deploying.
+- Notifications now use Prisma/Postgres directly (no Redis/external queue service required).
 
 ## Contributing
 
