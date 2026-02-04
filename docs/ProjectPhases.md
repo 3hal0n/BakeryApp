@@ -60,7 +60,7 @@ This document breaks the remaining work into clear phases, describes tasks per p
 
 - Goal: Prepare infra for production deployment and finalize secrets/config.
 - Tasks:
-  - Provision Postgres (managed), Redis (or Upstash) for queues, and object storage if needed.
+  - Provision Postgres (managed) and object storage if needed.
   - Configure secrets (CI/CD secret store, environment variables) and document them.
   - Set up backup procedures and DB migrations plan.
   - Add health-check endpoints and basic readiness probes.
@@ -90,7 +90,7 @@ This document breaks the remaining work into clear phases, describes tasks per p
 
 Additional notes & detailed checklists
 
-- Env vars: create `backend/.env.example` and `mobile/.env.example`. At minimum document: `DATABASE_URL`, `JWT_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `EXPO_PUBLIC_API_URL` (or similar mobile config), and `NODE_ENV`.
+- Env vars: create `backend/.env.example` and `mobile/.env.example`. At minimum document: `DATABASE_URL`, `JWT_SECRET`, `EXPO_PUBLIC_API_URL` (or similar mobile config), and `NODE_ENV`.
 - Security: Store secrets in a dedicated secret manager (GitHub Actions secrets, Azure Key Vault, AWS Secrets Manager), never commit `.env`.
 
 Owners suggestions

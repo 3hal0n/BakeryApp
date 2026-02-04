@@ -1,3 +1,11 @@
+// Redis configuration - DEPRECATED
+// This file is kept for reference but Redis is no longer used for notifications.
+// The notification system now uses Prisma/Postgres directly for better reliability
+// and to avoid external dependencies.
+//
+// If you need Redis for other purposes (caching, sessions, etc.), uncomment below:
+
+/*
 import { Redis } from 'ioredis';
 
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
@@ -32,3 +40,6 @@ redisConnection.on('error', (err) => {
 redisConnection.on('connect', () => {
   console.log('✅ Connected to Upstash Redis');
 });
+*/
+
+export {}; // Make this a module
